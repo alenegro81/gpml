@@ -2,19 +2,17 @@ import csv
 import time
 import threading
 from queue import Queue
-from urllib.error import HTTPError
-
 from neo4j.v1 import GraphDatabase
-from imdb import IMDb, IMDbDataAccessError
+from imdb import IMDb
 
 
-class ImportMovielensParallel(object):
+class MoviesImporterParallel(object):
 
     def __init__(self, uri, user, password):
         self._driver = GraphDatabase.driver(uri, auth=(user, password))
         self._ia = IMDb(reraiseExceptions=True)
         self._movie_queue = Queue()
-        self._writing_queue = Queue();
+        self._writing_queue = Queue()
         self._print_lock = threading.Lock()
 
     def close(self):
@@ -47,7 +45,44 @@ class ImportMovielensParallel(object):
                             i += 1
                             j += 1
 
-                        if i == 1000: #submits a batch every 1000 lines read
+                        if i == 1000:
+                            tx.commit()
+                            print(j, "lines processed")
+                            i = 0
+                            tx = session.begin_transaction()
+                    except Exception as e:
+                        print(e, row, reader.line_num)
+                tx.commit()
+                print(j, "lines processed")
+
+    def import_user_item(self, file):
+        with open(file, 'r+') as in_file:
+            reader = csv.reader(in_file, delimiter=',')
+            next(reader, None)
+            with self._driver.session() as session:
+                session.run("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+
+                tx = session.begin_transaction()
+                i = 0;
+                j = 0;
+                for row in reader:
+                    try:
+                        if row:
+                            user_id = strip(row[0])
+                            movie_id = strip(row[1])
+                            rating = strip(row[2])
+                            timestamp = strip(row[3])
+
+                            query = """
+                                MATCH (movie:Movie {movieId: {movieId}})
+                                MERGE (user:User {userId: {userId}})
+                                MERGE (user)-[:RATES {rating: {rating}, timestamp: {timestamp}}]->(movie)
+                            """
+                            tx.run(query, {"movieId":movie_id, "userId": user_id, "rating":rating, "timestamp": timestamp})
+                            i += 1
+                            j += 1
+
+                        if i == 1000:
                             tx.commit()
                             print(j, "lines processed")
                             i = 0
@@ -63,7 +98,6 @@ class ImportMovielensParallel(object):
             next(reader, None)
             with self._driver.session() as session:
                 session.run("CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE")
-
                 i = 0;
                 j = 0;
                 for k in range(50):
@@ -72,13 +106,12 @@ class ImportMovielensParallel(object):
                     movie_info_thread.daemon = True
                     movie_info_thread.start()
 
-                writing_thread = threading.Thread(target=self.writing_movie_on_db)
+                writing_thread = threading.Thread(target=self.write_movie_on_db)
                 writing_thread.daemon = True
                 writing_thread.start()
 
                 for row in reader:
                     if row:
-                        #check if it exist already
                         self._movie_queue.put(row)
                         i += 1
                         j += 1
@@ -120,7 +153,7 @@ class ImportMovielensParallel(object):
                         time.sleep(10)
             self._movie_queue.task_done()
 
-    def writing_movie_on_db(self):
+    def write_movie_on_db(self):
         query = """
             MATCH (movie:Movie {movieId: {movieId}})
             SET movie.plot = {plot}
@@ -179,8 +212,9 @@ def strip(string): return''.join([c if 0 < ord(c) < 128 else ' ' for c in string
 if __name__ == '__main__':
     start = time.time()
     uri = "bolt://localhost:7687"
-    importing = ImportMovielensParallel(uri=uri, user="neo4j", password="pippo1")
-    importing.import_movies(file="/Users/ale/neo4j-servers/gpml/dataset/ml-20m/movies.csv")
-    importing.import_movie_details(file="/Users/ale/neo4j-servers/gpml/dataset/ml-20m/links.csv")
+    importing = MoviesImporterParallel(uri=uri, user="neo4j", password="pippo1")
+    #importing.import_movies(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/movies.csv")
+    #importing.import_movie_details(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/links.csv")
+    importing.import_user_item(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/ratings.csv")
     end = time.time() - start
     print("Time to complete:", end)

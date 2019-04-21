@@ -1,0 +1,11 @@
+MATCH (m:Movie)
+WITH m.actors as actors
+UNWIND actors as actor
+MATCH (n:Movie)
+WHERE actor IN n.actors
+WITH actor, n.actors as otherActors, n.title as title
+UNWIND otherActors as otherActor
+WITH actor, otherActor, title
+WHERE actor <> otherActor
+RETURN actor, otherActor, title
+ORDER BY actor

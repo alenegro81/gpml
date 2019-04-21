@@ -1,0 +1,4 @@
+MATCH (feature)
+WHERE "Genre" in labels(feature) OR "Director" in labels(feature)
+WITH feature
+SET feature:Feature

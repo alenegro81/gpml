@@ -1,0 +1,4 @@
+MATCH (actor:Actor)-[:ACTS_IN]->(movie:Movie)<-[:ACTS_IN]-(otherActor:Actor)
+WHERE actor <> otherActor
+RETURN actor.name as actor, otherActor.name as otherActor, movie.title as title
+ORDER BY actor

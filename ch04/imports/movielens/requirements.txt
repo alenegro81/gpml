@@ -1,2 +1,2 @@
-neo4j-driver
+neo4j.v1
 imdbpy
