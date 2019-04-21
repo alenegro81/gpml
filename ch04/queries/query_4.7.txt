@@ -1,0 +1,4 @@
+MATCH (user:User)-[i:INTERESTED_IN]->(feature)-[]-(movie:Movie)
+WHERE user.userId = <userId> AND NOT exists((user)-[]->(movie))
+RETURN movie.title, count(i) as occurrences
+ORDER BY occurrences desc

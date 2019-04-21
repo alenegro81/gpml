@@ -1,0 +1,18 @@
+MATCH (user:User)-[:WATCHED|RATES]->(m:Movie)-[:ACTS_IN|WRITES|DIRECTED|PRODUCES|HAS_GENRE]-(feature)
+WITH user, feature, count(feature) as occurrence
+WHERE occurrence > 2
+MERGE (user)-[r:INTERESTED_IN]->(feature)
+SET r.weight = occurrence
+
+
+
+//If you need to run over a bigger dataset, better use apoc
+CALL apoc.periodic.iterate("MATCH (user:User)
+where not user:Processed
+return user",
+"SET user:Processed WITH user MATCH (user)-[:RATES]->(movie:Movie)-[:ACTS_IN|WRITES|DIRECTED|PRODUCES|HAS_GENRE]-(feature)
+WITH user, feature, count(feature) as occurrences
+WHERE occurrences > 2
+MERGE (user)-[r:INTERESTED_IN]->(feature)
+SET r.weight = occurrences",
+{batchSize:10, parallel:false})

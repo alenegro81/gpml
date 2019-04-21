@@ -3,7 +3,8 @@ import time
 from neo4j.v1 import GraphDatabase
 from imdb import IMDb
 
-class import_movielens(object):
+
+class MoviesImporter(object):
 
     def __init__(self, uri, user, password):
         self._driver = GraphDatabase.driver(uri, auth=(user, password))
@@ -17,9 +18,10 @@ class import_movielens(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                session.run("CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
-                session.run("CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
-
+                session.run(
+                    "CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
+                session.run(
+                    "CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
 
                 tx = session.begin_transaction()
 
@@ -38,11 +40,11 @@ class import_movielens(object):
                                 MERGE (g:Genre {genre: genre})
                                 MERGE (movie)-[:HAS_GENRE]->(g)
                             """
-                            tx.run(query, {"movieId":movie_id, "title": title, "genres":genres.split("|")})
+                            tx.run(query, {"movieId": movie_id, "title": title, "genres": genres.split("|")})
                             i += 1
                             j += 1
 
-                        if i == 1000: #submits a batch every 1000 lines read
+                        if i == 1000:
                             tx.commit()
                             print(j, "lines processed")
                             i = 0
@@ -51,7 +53,6 @@ class import_movielens(object):
                         print(e, row, reader.line_num)
                 tx.commit()
                 print(j, "lines processed")
-
 
     def import_movie_details(self, file):
         with open(file, 'r+') as in_file:
@@ -67,13 +68,12 @@ class import_movielens(object):
                         if row:
                             movie_id = strip(row[0])
                             imdb_id = strip(row[1])
-                            # get a movie
                             movie = self._ia.get_movie(imdb_id)
                             self.process_movie_info(movie_info=movie, tx=tx, movie_id=movie_id)
                             i += 1
                             j += 1
 
-                        if i == 10: #submits a batch every 1000 lines read
+                        if i == 10:
                             tx.commit()
                             print(j, "lines processed")
                             i = 0
@@ -83,9 +83,7 @@ class import_movielens(object):
                 tx.commit()
                 print(j, "lines processed")
 
-
     def process_movie_info(self, tx, movie_info, movie_id):
-        # print the names of the directors of the movie
         query = """
             MATCH (movie:Movie {movieId: {movieId}})
             SET movie.plot = {plot}
@@ -100,7 +98,6 @@ class import_movielens(object):
             if 'name' in director.data:
                 directors.append(director['name'])
 
-        # print the genres of the movie
         genres = ''
         if 'genres' in movie_info:
             genres = movie_info['genres']
@@ -123,16 +120,54 @@ class import_movielens(object):
         if 'plot outline' in movie_info:
             plot = movie_info['plot outline']
 
-        tx.run(query, {"movieId":movie_id, "directors": directors, "genres": genres, "actors": actors, "plot": plot, "writers": writers, "producers": producers})
+        tx.run(query, {"movieId": movie_id, "directors": directors, "genres": genres, "actors": actors, "plot": plot,
+                       "writers": writers, "producers": producers})
 
+    def import_user_item(self, file):
+        with open(file, 'r+') as in_file:
+            reader = csv.reader(in_file, delimiter=',')
+            next(reader, None)
+            with self._driver.session() as session:
+                session.run("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
 
-def strip(string): return''.join([c if 0 < ord(c) < 128 else ' ' for c in string]) #removes non utf-8 chars from string within cell
+                tx = session.begin_transaction()
+                i = 0;
+                j = 0;
+                for row in reader:
+                    try:
+                        if row:
+                            user_id = strip(row[0])
+                            movie_id = strip(row[1])
+                            rating = strip(row[2])
+                            timestamp = strip(row[3])
+
+                            query = """
+                                MATCH (movie:Movie {movieId: {movieId}})
+                                MERGE (user:User {userId: {userId}})
+                                MERGE (user)-[:RATES {rating: {rating}, timestamp: {timestamp}}]->(movie)
+                            """
+                            tx.run(query, {"movieId":movie_id, "userId": user_id, "rating":rating, "timestamp": timestamp})
+                            i += 1
+                            j += 1
+
+                        if i == 1000:
+                            tx.commit()
+                            print(j, "lines processed")
+                            i = 0
+                            tx = session.begin_transaction()
+                    except Exception as e:
+                        print(e, row, reader.line_num)
+                tx.commit()
+                print(j, "lines processed")
+
+def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
+
 
 if __name__ == '__main__':
     start = time.time()
     uri = "bolt://localhost:7687"
-    importing = import_movielens(uri=uri, user="neo4j", password="pippo1")
-    #importing.import_movies(file="/Users/ale/neo4j-servers/gpml/dataset/ml-20m/movies.csv")
-    importing.import_movie_details(file="/Users/ale/neo4j-servers/gpml/dataset/ml-20m/links.csv")
+    importing = MoviesImporter(uri=uri, user="neo4j", password="pippo1")
+    importing.import_movies(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/movies.csv")
+    importing.import_movie_details(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/links.csv")
     end = time.time() - start
     print("Time to complete:", end)
