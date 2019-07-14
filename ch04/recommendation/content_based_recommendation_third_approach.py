@@ -102,6 +102,6 @@ class ContentBasedRecommender(object):
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = ContentBasedRecommender(uri=uri, user="neo4j", password="pippo1")
-    #recommender.compute_and_store_similarity();
+    recommender.compute_and_store_similarity();
     top10 = recommender.recommendTo("598", 10);
     print(top10)
