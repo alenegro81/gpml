@@ -92,10 +92,7 @@ public class SparseVector  {
         return values;
     }
 
-    public float dot(SparseVector other) {
-
-        SparseVector otherSparseVector = other;
-
+    public float dot(SparseVector otherSparseVector) {
         if (this.values == null ||
                 this.cardinality == 0 ||
                 otherSparseVector.values == null ||
