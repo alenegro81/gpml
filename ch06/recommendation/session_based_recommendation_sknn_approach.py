@@ -60,9 +60,9 @@ class SessionBasedRecommender(object):
     def store_knn(self, session_id, knn):
         with self._driver.session() as session:
             tx = session.begin_transaction()
-            knnMap = {a : b.item() for a,b in knn}
+            knnMap = {str(a) : b.item() for a,b in knn}
             clean_query = """
-                MATCH (session:Session)-[s:SIMILAR_TO]-()
+                MATCH (session:Session)-[s:SIMILAR_TO]->()
                 WHERE session.sessionId = {sessionId}
                 DELETE s
             """
@@ -72,38 +72,34 @@ class SessionBasedRecommender(object):
                 UNWIND keys({knn}) as otherSessionId
                 MATCH (other:Session)
                 WHERE other.sessionId = toInt(otherSessionId)
-                MERGE (session)-[:SIMILAR_TO {weight: {knn}[otherSessionId]}]-(other)
+                MERGE (session)-[:SIMILAR_TO {weight: {knn}[otherSessionId]}]->(other)
             """
             tx.run(clean_query, {"sessionId": session_id})
             tx.run(query, {"sessionId": session_id, "knn": knnMap})
             tx.commit()
 
-    def recommendTo(self, user_id, k):
-        dtype = [('movieId', 'U10'), ('value', 'f4')]
-        top_movies = np.array([], dtype=dtype)
+    def recommend_to(self, session_id, k):
+        top_items = []
         query = """
-            MATCH (user:User)
-            WHERE user.userId = {userId}
-            WITH user
-            MATCH (targetMovie:Movie)
-            WHERE NOT EXISTS((user)-[]->(targetMovie))
-            WITH targetMovie, user
-            MATCH (user:User)-[]->(movie:Movie)-[r:SIMILAR_TO]->(targetMovie)
-            RETURN targetMovie.movieId as movieId, sum(r.weight)/count(r) as relevance
-            order by relevance desc
+            MATCH (target:Session)-[r:SIMILAR_TO]->(d:Session)-[:CONTAINS]->(:Click)-[:RELATED_TO]->(item:Item) 
+            WHERE target.sessionId = {sessionId} 
+            WITH DISTINCT item.itemId as itemId, r
+            RETURN itemId, sum(r.weight) as score
+            ORDER BY score desc
             LIMIT %s
         """
         with self._driver.session() as session:
             tx = session.begin_transaction()
-            for result in tx.run(query % (k), {"userId": user_id}):
-                top_movies = np.concatenate((top_movies, np.array([(result["movieId"], result["relevance"])], dtype=dtype)))
+            for result in tx.run(query % (k), {"sessionId": session_id}):
+                top_items.append((result["itemId"], result["score"]))
 
-        return top_movies
+        top_items.sort(key=lambda x: -x[1])
+        return top_items
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = SessionBasedRecommender(uri=uri, user="neo4j", password="pippo1")
     recommender.compute_and_store_similarity();
-    top10 = recommender.recommendTo("598", 10);
+    top10 = recommender.recommend_to(12547, 10);
     recommender.close()
     print(top10)

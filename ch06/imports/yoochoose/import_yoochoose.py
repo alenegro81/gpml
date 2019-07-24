@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 import time
-from neo4j.v1 import GraphDatabase
-from imdb import IMDb
+from neo4j import GraphDatabase
 
 
 class YoochooseImporter(object):
