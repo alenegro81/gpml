@@ -42,7 +42,7 @@ class SessionBasedRecommender(object):
         knn_start = time.time()
         i = 0
         for ix in range(overall_size):
-            knn = self.compute_knn(ix, sessions_id, t, 10);
+            knn = self.compute_knn(ix, sessions_id, t, 50);
             start = time.time()
             self.store_knn(sessions_id[ix], knn)
             self.__time_to_store.append(time.time() - start)
@@ -74,7 +74,7 @@ class SessionBasedRecommender(object):
                     knn_values.append((other_sessions[0][iy], value))
         self.__time_to_knn.append(time.time() - start)
         start = time.time()
-        knn_values.sort(key=lambda x: x[1])
+        knn_values.sort(key=lambda x: -x[1])
         self.__time_to_sort.append(time.time() - start)
         return knn_values[:k]
 
@@ -109,30 +109,49 @@ class SessionBasedRecommender(object):
             print(i, "lines processed")
         return sessions_VSM_sparse.getMatrix(), sessions_id
 
-    def store_knn(self, item, knn):
+    def store_knn(self, session_id, knn):
         with self._driver.session() as session:
             tx = session.begin_transaction()
-            knnMap = {str(a) : b for a,b in knn}
+            knnMap = {str(a): b for a, b in knn}
             clean_query = """
-                MATCH (item:Item)-[s:SIMILAR_TO]-()
-                WHERE item.itemId = {itemId}
+                MATCH (session:Session)-[s:SIMILAR_TO]->()
+                WHERE session.sessionId = {sessionId}
                 DELETE s
             """
             query = """
-                MATCH (item:Item)
-                WHERE item.itemId = {itemId}
-                UNWIND keys({knn}) as otherItemId
-                MATCH (other:Item)
-                WHERE other.itemId = toInt(otherItemId)
-                MERGE (item)-[:SIMILAR_TO {weight: {knn}[otherItemId]}]-(other)
+                MATCH (session:Session)
+                WHERE session.sessionId = {sessionId}
+                UNWIND keys({knn}) as otherSessionId
+                MATCH (other:Session)
+                WHERE other.sessionId = toInt(otherSessionId)
+                MERGE (session)-[:SIMILAR_TO {weight: {knn}[otherSessionId]}]->(other)
             """
-            tx.run(clean_query, {"itemId": item})
-            if len(knn) > 0:
-                tx.run(query, {"itemId": item, "knn": knnMap})
+            tx.run(clean_query, {"sessionId": session_id})
+            tx.run(query, {"sessionId": session_id, "knn": knnMap})
             tx.commit()
+
+    def recommend_to(self, session_id, k):
+        top_items = []
+        query = """
+            MATCH (target:Session)-[r:SIMILAR_TO]->(d:Session)-[:CONTAINS]->(:Click)-[:RELATED_TO]->(item:Item) 
+            WHERE target.sessionId = {sessionId} 
+            WITH DISTINCT item.itemId as itemId, r
+            RETURN itemId, sum(r.weight) as score
+            ORDER BY score desc
+            LIMIT %s
+        """
+        with self._driver.session() as session:
+            tx = session.begin_transaction()
+            for result in tx.run(query % (k), {"sessionId": session_id}):
+                top_items.append((result["itemId"], result["score"]))
+
+        top_items.sort(key=lambda x: -x[1])
+        return top_items
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = SessionBasedRecommender(uri=uri, user="neo4j", password="pippo1")
     recommender.compute_and_store_similarity();
+    top10 = recommender.recommend_to(12547, 10);
+    print(top10)
     recommender.close()

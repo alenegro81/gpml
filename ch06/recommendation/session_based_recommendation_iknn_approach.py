@@ -61,7 +61,7 @@ class SessionBasedRecommender(object):
             tx = session.begin_transaction()
             knnMap = {a : b.item() for a,b in knn}
             clean_query = """
-                MATCH (item:Item)-[s:SIMILAR_TO]-()
+                MATCH (item:Item)-[s:SIMILAR_TO]->()
                 WHERE item.itemId = {itemId}
                 DELETE s
             """
@@ -71,14 +71,33 @@ class SessionBasedRecommender(object):
                 UNWIND keys({knn}) as otherItemId
                 MATCH (other:Item)
                 WHERE other.itemId = toInt(otherItemId)
-                MERGE (item)-[:SIMILAR_TO {weight: {knn}[otherItemId]}]-(other)
+                MERGE (item)-[:SIMILAR_TO {weight: {knn}[otherItemId]}]->(other)
             """
             tx.run(clean_query, {"itemId": item})
             tx.run(query, {"itemId": item, "knn": knnMap})
             tx.commit()
 
+    def recommend_to(self, item_id, k):
+        top_items = []
+        query = """
+            MATCH (i:Item)-[r:SIMILAR_TO]->(oi:Item)
+            WHERE i.itemId = {itemId}
+            RETURN oi.itemId as itemId, r.weight as score
+            ORDER BY score desc
+            LIMIT %s
+        """
+        with self._driver.session() as session:
+            tx = session.begin_transaction()
+            for result in tx.run(query % (k), {"itemId": item_id}):
+                top_items.append((result["itemId"], result["score"]))
+
+        top_items.sort(key=lambda x: -x[1])
+        return top_items
+
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = SessionBasedRecommender(uri=uri, user="neo4j", password="pippo1")
-    recommender.compute_and_store_similarity();
+    #recommender.compute_and_store_similarity();
+    top10 = recommender.recommend_to(214842060, 10);
     recommender.close()
+    print(top10)

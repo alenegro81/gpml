@@ -61,7 +61,7 @@ class ContentBasedRecommender(object):
         with self._driver.session() as session:
             tx = session.begin_transaction()
             test = {a : b.item() for a,b in knn}
-            clean_query = """MATCH (movie:Movie)-[s:SIMILAR_TO]-()
+            clean_query = """MATCH (movie:Movie)-[s:SIMILAR_TO]->()
                 WHERE movie.movieId = {movieId}
                 DELETE s
             """
@@ -71,7 +71,7 @@ class ContentBasedRecommender(object):
                 UNWIND keys({knn}) as otherMovieId
                 MATCH (other:Movie)
                 WHERE other.movieId = otherMovieId
-                MERGE (movie)-[:SIMILAR_TO {weight: {knn}[otherMovieId]}]-(other)
+                MERGE (movie)-[:SIMILAR_TO {weight: {knn}[otherMovieId]}]->(other)
             """
             tx.run(clean_query, {"movieId": movie})
             tx.run(query, {"movieId": movie, "knn": test})

@@ -74,7 +74,7 @@ class SessionBasedRecommender(object):
                     knn_values.append((other_item[0][1], value))
         self.__time_to_knn.append(time.time() - start)
         start = time.time()
-        knn_values.sort(key=lambda x: x[1])
+        knn_values.sort(key=lambda x: -x[1])
         self.__time_to_sort.append(time.time() - start)
         return knn_values[:k]
 
@@ -115,7 +115,7 @@ class SessionBasedRecommender(object):
             tx = session.begin_transaction()
             knnMap = {str(a) : b for a,b in knn}
             clean_query = """
-                MATCH (item:Item)-[s:SIMILAR_TO]-()
+                MATCH (item:Item)-[s:SIMILAR_TO]->()
                 WHERE item.itemId = {itemId}
                 DELETE s
             """
@@ -125,7 +125,7 @@ class SessionBasedRecommender(object):
                 UNWIND keys({knn}) as otherItemId
                 MATCH (other:Item)
                 WHERE other.itemId = toInt(otherItemId)
-                MERGE (item)-[:SIMILAR_TO {weight: {knn}[otherItemId]}]-(other)
+                MERGE (item)-[:SIMILAR_TO {weight: {knn}[otherItemId]}]->(other)
             """
             tx.run(clean_query, {"itemId": item})
             if len(knn) > 0:

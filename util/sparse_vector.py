@@ -11,7 +11,10 @@ def cosine_similarity(vectA, vectB):
 
 
 def dot(vect_a, vect_b):
-    if vect_a is None or vect_b is None:
+    if vect_a is None \
+            or vect_b is None\
+            or len(vect_a) == 0 \
+            or len(vect_b) == 0:
         return 0
 
     dot_value = 0.0
