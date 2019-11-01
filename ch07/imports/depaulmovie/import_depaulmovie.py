@@ -140,11 +140,11 @@ class DePaulMovieImporter(object):
         query = """
             MATCH (movie:Item {itemId: {movieId}})
             SET movie.plot = {plot}, movie.title = {title}
-            FOREACH (director IN {directors} | MERGE (d:Person {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
-            FOREACH (actor IN {actors} | MERGE (d:Person {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
-            FOREACH (producer IN {producers} | MERGE (d:Person {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
-            FOREACH (writer IN {writers} | MERGE (d:Person {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
-            FOREACH (genre IN {genres} | MERGE (g:Genre {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
+            FOREACH (director IN {directors} | MERGE (d:Person:Feature {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
+            FOREACH (actor IN {actors} | MERGE (d:Person:Feature {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
+            FOREACH (producer IN {producers} | MERGE (d:Person:Feature {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
+            FOREACH (writer IN {writers} | MERGE (d:Person:Feature {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
+            FOREACH (genre IN {genres} | MERGE (g:Genre:Feature {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
         """
         while True:
             # print the names of the directors of the movie
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     start = time.time()
     uri = "bolt://localhost:7687"
     importing = DePaulMovieImporter(uri=uri, user="neo4j", password="pippo1")
-    #importing.import_event_data(file="/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie/ratings.txt")
+    importing.import_event_data(file="/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie/ratings.txt")
     importing.import_movie_details()
     end = time.time() - start
     importing.close()

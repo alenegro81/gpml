@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from neo4j.v1 import GraphDatabase
+from neo4j import GraphDatabase
 
 
 class ContentBasedRecommenderSecondApproach(object):
