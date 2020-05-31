@@ -26,7 +26,7 @@ class ContentBasedRecommenderSecondApproach(object):
             value = cosine_similarity([user], [movies[other_movie]])
             if value > 0:
                 knn_values = np.concatenate((knn_values, np.array([(other_movie, value)], dtype=dtype)))
-            knn_values = np.sort(knn_values, kind='mergesort', order='value' )[::-1]
+        knn_values = np.sort(knn_values, kind='mergesort', order='value' )[::-1]
         return np.array_split(knn_values, [k])[0]
 
     def get_user_vector(self, user_id):

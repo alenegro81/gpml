@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from neo4j.v1 import GraphDatabase
+from neo4j import GraphDatabase
 
 
 class ContentBasedRecommender(object):
@@ -28,7 +28,7 @@ class ContentBasedRecommender(object):
                 value = cosine_similarity([movies[movie]], [movies[other_movie]])
                 if value > 0:
                     knn_values = np.concatenate((knn_values, np.array([(other_movie, value)], dtype=dtype)))
-                knn_values = np.sort(knn_values, kind='mergesort', order='value' )[::-1]
+        knn_values = np.sort(knn_values, kind='mergesort', order='value' )[::-1]
         return np.array_split(knn_values, k)[0]
 
     def get_movie_vectors(self):

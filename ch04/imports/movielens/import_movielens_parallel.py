@@ -2,7 +2,7 @@ import csv
 import time
 import threading
 from queue import Queue
-from neo4j.v1 import GraphDatabase
+from neo4j import GraphDatabase
 from imdb import IMDb
 
 
@@ -23,8 +23,8 @@ class MoviesImporterParallel(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                session.run("CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
-                session.run("CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
+                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
+                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
                 tx = session.begin_transaction()
                 i = 0;
                 j = 0;
@@ -35,9 +35,9 @@ class MoviesImporterParallel(object):
                             title = strip(row[1])
                             genres = strip(row[2])
                             query = """
-                                MERGE (movie:Movie {movieId: {movieId}, title: {title}})
+                                MERGE (movie:Movie {movieId: $movieId, title: $title})
                                 with movie
-                                UNWIND {genres} as genre
+                                UNWIND $genres as genre
                                 MERGE (g:Genre {genre: genre})
                                 MERGE (movie)-[:HAS_GENRE]->(g)
                             """
@@ -60,7 +60,7 @@ class MoviesImporterParallel(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                session.run("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+                self.executeNoException(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
 
                 tx = session.begin_transaction()
                 i = 0;
@@ -74,9 +74,9 @@ class MoviesImporterParallel(object):
                             timestamp = strip(row[3])
 
                             query = """
-                                MATCH (movie:Movie {movieId: {movieId}})
-                                MERGE (user:User {userId: {userId}})
-                                MERGE (user)-[:RATES {rating: {rating}, timestamp: {timestamp}}]->(movie)
+                                MATCH (movie:Movie {movieId: $movieId})
+                                MERGE (user:User {userId: $userId})
+                                MERGE (user)-[:RATES {rating: $rating, timestamp: $timestamp}]->(movie)
                             """
                             tx.run(query, {"movieId":movie_id, "userId": user_id, "rating":rating, "timestamp": timestamp})
                             i += 1
@@ -97,7 +97,7 @@ class MoviesImporterParallel(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                session.run("CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE")
+                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE")
                 i = 0;
                 j = 0;
                 for k in range(50):
@@ -155,13 +155,13 @@ class MoviesImporterParallel(object):
 
     def write_movie_on_db(self):
         query = """
-            MATCH (movie:Movie {movieId: {movieId}})
-            SET movie.plot = {plot}
-            FOREACH (director IN {directors} | MERGE (d:Person {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
-            FOREACH (actor IN {actors} | MERGE (d:Person {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
-            FOREACH (producer IN {producers} | MERGE (d:Person {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
-            FOREACH (writer IN {writers} | MERGE (d:Person {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
-            FOREACH (genre IN {genres} | MERGE (g:Genre {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
+            MATCH (movie:Movie {movieId: $movieId})
+            SET movie.plot = $plot
+            FOREACH (director IN $directors | MERGE (d:Person {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
+            FOREACH (actor IN $actors | MERGE (d:Person {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
+            FOREACH (producer IN $producers | MERGE (d:Person {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
+            FOREACH (writer IN $writers | MERGE (d:Person {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
+            FOREACH (genre IN $genres | MERGE (g:Genre {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
         """
         while True:
             # print the names of the directors of the movie
@@ -205,6 +205,11 @@ class MoviesImporterParallel(object):
                 except Exception as e:
                     print(movie_id, e)
 
+    def executeNoException(self, session, query):
+        try:
+            session.run(query)
+        except Exception as e:
+            pass
 
 def strip(string): return''.join([c if 0 < ord(c) < 128 else ' ' for c in string]) #removes non utf-8 chars from string within cell
 
@@ -214,7 +219,7 @@ if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     importing = MoviesImporterParallel(uri=uri, user="neo4j", password="pippo1")
     #importing.import_movies(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/movies.csv")
-    #importing.import_movie_details(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/links.csv")
+    importing.import_movie_details(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/links.csv")
     importing.import_user_item(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/ratings.csv")
     end = time.time() - start
     print("Time to complete:", end)
