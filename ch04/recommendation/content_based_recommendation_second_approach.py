@@ -11,12 +11,12 @@ class ContentBasedRecommenderSecondApproach(object):
     # SET feature: Feature
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
     def recommendTo(self, userId, k):
         user_VSM = self.get_user_vector(userId)
         movies_VSM = self.get_movie_vectors(userId)
-        top_k = self.compute_top_k(user_VSM, movies_VSM, k);
+        top_k = self.compute_top_k (user_VSM, movies_VSM, k);
         return top_k
 
     def compute_top_k(self, user, movies, k):
@@ -31,45 +31,45 @@ class ContentBasedRecommenderSecondApproach(object):
 
     def get_user_vector(self, user_id):
         query = """
-                    MATCH p=(user:User)-[:WATCHED|:RATES]->(movie)
-                    WHERE user.userId = {userId}
-                    with count(p) as total
-                    MATCH (feature:Feature)
-                    WITH feature, total
-                    ORDER BY id(feature)
-                    MATCH (user:User)
-                    WHERE user.userId = {userId}
-                    OPTIONAL MATCH (user)-[r:INTERESTED_IN]-(feature)
-                    WITH CASE WHEN r IS null THEN 0 ELSE (r.weight*1.0f)/(total*1.0f) END as value
-                    RETURN collect(value) as vector
-                """
+                MATCH p=(user:User)-[:WATCHED|RATES]->(movie)
+                WHERE user.userId = $userId
+                with count(p) as total
+                MATCH (feature:Feature)
+                WITH feature, total
+                ORDER BY id(feature)
+                MATCH (user:User)
+                WHERE user.userId = $userId
+                OPTIONAL MATCH (user)-[r:INTERESTED_IN]-(feature)
+                WITH CASE WHEN r IS null THEN 0 ELSE (r.weight*1.0f)/(total*1.0f) END as value
+                RETURN collect(value) as vector
+            """
         user_VSM = None
         with self._driver.session() as session:
             tx = session.begin_transaction()
             vector = tx.run(query, {"userId": user_id})
             user_VSM = vector.single()[0]
         print(len(user_VSM))
-        return user_VSM;
+        return user_VSM
 
     def get_movie_vectors(self, user_id):
         list_of_moview_query = """
-                    MATCH (movie:Movie)-[r:DIRECTED|:HAS_GENRE]-(feature)<-[i:INTERESTED_IN]-(user:User {userId: {userId}})
-                    WHERE NOT EXISTS((user)-[]->(movie)) AND EXISTS((user)-[]->(feature))
-                    WITH movie, count(i) as featuresCount
-                    WHERE featuresCount > 5
-                    RETURN movie.movieId as movieId
-                """
+                MATCH (movie:Movie)-[r:DIRECTED|HAS_GENRE]-(feature)<-[i:INTERESTED_IN]-(user:User {userId: $userId})
+                WHERE NOT EXISTS((user)-[]->(movie)) AND EXISTS((user)-[]->(feature))
+                WITH movie, count(i) as featuresCount
+                WHERE featuresCount > 5
+                RETURN movie.movieId as movieId
+            """
 
         query = """
-                    MATCH (feature:Feature)
-                    WITH feature
-                    ORDER BY id(feature)
-                    MATCH (movie:Movie)
-                    WHERE movie.movieId = {movieId} 
-                    OPTIONAL MATCH (movie)-[r:DIRECTED|:HAS_GENRE]-(feature)
-                    WITH CASE WHEN r IS null THEN 0 ELSE 1 END as value
-                    RETURN collect(value) as vector;
-                """
+                MATCH (feature:Feature)
+                WITH feature
+                ORDER BY id(feature)
+                MATCH (movie:Movie)
+                WHERE movie.movieId = $movieId
+                OPTIONAL MATCH (movie)-[r:DIRECTED|HAS_GENRE]-(feature)
+                WITH CASE WHEN r IS null THEN 0 ELSE 1 END as value
+                RETURN collect(value) as vector;
+            """
         movies_VSM = {}
         with self._driver.session() as session:
             tx = session.begin_transaction()
@@ -84,12 +84,13 @@ class ContentBasedRecommenderSecondApproach(object):
                     print(i, "lines processed")
             print(i, "lines processed")
         print(len(movies_VSM))
-        return movies_VSM;
+        return movies_VSM
 
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = ContentBasedRecommenderSecondApproach(uri=uri, user="neo4j", password="pippo1")
     top10 = recommender.recommendTo("598", 10);
+    # would be nice to enrich this information with at least titles
     print(top10)
 

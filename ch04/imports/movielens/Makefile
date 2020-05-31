@@ -1,5 +1,8 @@
+PIP=pip
+PYTHON=python
+
 init:
-	pip install -r requirements.txt
+	$(PIP) install -r requirements.txt
 
 test:
 	nosetests tests
