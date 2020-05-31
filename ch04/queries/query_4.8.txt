@@ -4,7 +4,7 @@ WITH feature
 ORDER BY id(feature)
 MATCH (movie:Movie)
 WHERE movie.title STARTS WITH "Pulp Fiction"
-OPTIONAL MATCH (movie)-[r:DIRECTED|:HAS_GENRE]-(feature)
+OPTIONAL MATCH (movie)-[r:DIRECTED|HAS_GENRE]-(feature)
 RETURN CASE WHEN r IS null THEN 0 ELSE 1 END as Value,
 CASE WHEN feature.genre IS null THEN feature.name ELSE feature.genre END as Feature
 
