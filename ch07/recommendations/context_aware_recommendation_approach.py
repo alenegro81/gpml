@@ -1,9 +1,9 @@
-import numpy as np
 from neo4j import GraphDatabase
 
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
 from util.sparse_vector import cosine_similarity
+
 
 class ContextAwareRecommender(object):
 
@@ -146,7 +146,6 @@ if __name__ == '__main__':
     contexts.append((2, {"location": "Cinema", "companion": "Partner", "time": "Weekend"}))
     contexts.append((3, {"location": "Cinema", "companion": "Partner"}))
     recommender.compute_and_store_similarity(contexts);
-    # From reviewer this given ID didn't produce anything
     top10 = recommender.recommend_to(214842060, 10);
     recommender.close()
     print(top10)
