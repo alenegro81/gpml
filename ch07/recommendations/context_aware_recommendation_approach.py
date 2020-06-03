@@ -1,12 +1,14 @@
 import numpy as np
 from neo4j import GraphDatabase
-from util.sparse_vector import cosine_similarity
 
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
+from util.sparse_vector import cosine_similarity
 
 class ContextAwareRecommender(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
     def close(self):
         self._driver.close()
@@ -39,20 +41,20 @@ class ContextAwareRecommender(object):
                     MATCH (event)-[:EVENT_USER]->(user:User)
                 """
         where_query = """
-                    WHERE item.itemId = {itemId} 
+                    WHERE item.itemId = $itemId
                 """
 
         if "location" in context_info:
             match_query += "MATCH (event)-[:EVENT_LOCATION]->(location:Location) "
-            where_query += "AND location.value = {location} "
+            where_query += "AND location.value = $location "
 
         if "time" in context_info:
             match_query += "MATCH (event)-[:EVENT_TIME]->(time:Time) "
-            where_query += "AND time.value = {time} "
+            where_query += "AND time.value = $time "
 
         if "companion" in context_info:
             match_query += "MATCH (event)-[:EVENT_COMPANION]->(companion:Companion) "
-            where_query += "AND companion.value = {companion} "
+            where_query += "AND companion.value = $companion "
 
         return_query = """
                     WITH user.userId as userId, event.rating as rating
@@ -84,31 +86,31 @@ class ContextAwareRecommender(object):
             knnMap = {a: b for a, b in knn}
             clean_query = """
                 MATCH (s:Similarity)-[:RELATED_TO_SOURCE_ITEM]->(item:Item)
-                WHERE item.itemId = {itemId} AND s.contextId = {contextId}
+                WHERE item.itemId = $itemId AND s.contextId = $contextId
                 DETACH DELETE s
             """
 
             query = """
                 MATCH (item:Item)
-                WHERE item.itemId = {itemId}
-                UNWIND keys({knn}) as otherItemId
+                WHERE item.itemId = $itemId
+                UNWIND keys($knn) as otherItemId
                 MATCH (other:Item)
                 WHERE other.itemId = otherItemId
-                CREATE (similarity:Similarity {weight: {knn}[otherItemId], contextId: {contextId}})
+                CREATE (similarity:Similarity {weight: $knn[otherItemId], contextId: $contextId})
                 MERGE (item)<-[:RELATED_TO_SOURCE_ITEM]-(similarity)
                 MERGE (other)<-[:RELATED_TO_DEST_ITEM ]-(similarity)
             """
 
             if "location" in params:
-                query += "WITH similarity MATCH (location:Location {value: {location}}) "
+                query += "WITH similarity MATCH (location:Location {value: $location}) "
                 query += "MERGE (location)<-[:RELATED_TO]-(similarity) "
 
             if "time" in params:
-                query += "WITH similarity MATCH (time:Time {value: {time}}) "
+                query += "WITH similarity MATCH (time:Time {value: $time}) "
                 query += "MERGE (time)<-[:RELATED_TO]-(similarity) "
 
             if "companion" in params:
-                query += "WITH similarity MATCH (companion:Companion {value: {companion}}) "
+                query += "WITH similarity MATCH (companion:Companion {value: $companion}) "
                 query += "MERGE (companion)<-[:RELATED_TO]-(similarity) "
 
             tx.run(clean_query, {"itemId": item, "contextId": context_id})
@@ -122,7 +124,7 @@ class ContextAwareRecommender(object):
         top_items = []
         query = """
             MATCH (i:Item)-[r:SIMILAR_TO]->(oi:Item)
-            WHERE i.itemId = {itemId}
+            WHERE i.itemId = $itemId
             RETURN oi.itemId as itemId, r.weight as score
             ORDER BY score desc
             LIMIT %s
@@ -144,6 +146,7 @@ if __name__ == '__main__':
     contexts.append((2, {"location": "Cinema", "companion": "Partner", "time": "Weekend"}))
     contexts.append((3, {"location": "Cinema", "companion": "Partner"}))
     recommender.compute_and_store_similarity(contexts);
+    # From reviewer this given ID didn't produce anything
     top10 = recommender.recommend_to(214842060, 10);
     recommender.close()
     print(top10)
