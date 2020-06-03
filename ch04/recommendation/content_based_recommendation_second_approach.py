@@ -90,7 +90,7 @@ class ContentBasedRecommenderSecondApproach(object):
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = ContentBasedRecommenderSecondApproach(uri=uri, user="neo4j", password="pippo1")
-    top10 = recommender.recommendTo("598", 10);
+    top10 = recommender.recommendTo("598", 10); #Replace 598 with any other user id you are interested in
     # would be nice to enrich this information with at least titles
     print(top10)
 

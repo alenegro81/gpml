@@ -6,7 +6,7 @@ SET r.weight = occurrence
 
 
 
-//If you need to run over a bigger dataset, better use apoc
+//If you need to run over a bigger dataset, better use apoc (see https://neo4j.com/labs/apoc/ for details)
 CALL apoc.periodic.iterate("MATCH (user:User)
 where not user:Processed
 return user",
