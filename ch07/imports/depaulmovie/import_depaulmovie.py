@@ -5,13 +5,13 @@ from imdb._exceptions import IMDbParserError
 import csv
 from queue import Queue
 import threading
-
+import sys
 
 
 class DePaulMovieImporter(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self._ia = IMDb(reraiseExceptions=True)
         self._movie_queue = Queue()
         self._writing_queue = Queue()
@@ -35,12 +35,12 @@ class DePaulMovieImporter(object):
                 tx = session.begin_transaction()
                 i = 0;
                 query = """
-                        MERGE (user:User {userId: {userId}})
-                        MERGE (time:Time {value: {time}})
-                        MERGE (location:Location {value: {location}})
-                        MERGE (companion:Companion {value: {companion}})
-                        MERGE (item:Item {itemId: {itemId}})
-                        CREATE (event:Event {rating:{rating}})
+                        MERGE (user:User {userId: $userId})
+                        MERGE (time:Time {value: $time})
+                        MERGE (location:Location {value: $location})
+                        MERGE (companion:Companion {value: $companion})
+                        MERGE (item:Item {itemId: $itemId})
+                        CREATE (event:Event {rating:$rating})
                         CREATE (event)-[:EVENT_USER]->(user)
                         CREATE (event)-[:EVENT_ITEM]->(item)
                         CREATE (event)-[:EVENT_LOCATION]->(location)
@@ -125,10 +125,12 @@ class DePaulMovieImporter(object):
                     break
                 except :
                     with self._print_lock:
+                        # TODO: say what kind of error occured
                         print("An error occurred")
                     retry = retry + 1
                     if retry == 10:
                         with self._print_lock:
+                            # TODO: say what kind of error occured
                             print("Error while getting", imdb_id)
                     else:
                         with self._print_lock:
@@ -138,13 +140,13 @@ class DePaulMovieImporter(object):
 
     def write_movie_on_db(self):
         query = """
-            MATCH (movie:Item {itemId: {movieId}})
-            SET movie.plot = {plot}, movie.title = {title}
-            FOREACH (director IN {directors} | MERGE (d:Person:Feature {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
-            FOREACH (actor IN {actors} | MERGE (d:Person:Feature {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
-            FOREACH (producer IN {producers} | MERGE (d:Person:Feature {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
-            FOREACH (writer IN {writers} | MERGE (d:Person:Feature {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
-            FOREACH (genre IN {genres} | MERGE (g:Genre:Feature {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
+            MATCH (movie:Item {itemId: $movieId})
+            SET movie.plot = $plot, movie.title = $title
+            FOREACH (director IN $directors | MERGE (d:Person:Feature {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
+            FOREACH (actor IN $actors | MERGE (d:Person:Feature {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
+            FOREACH (producer IN $producers | MERGE (d:Person:Feature {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
+            FOREACH (writer IN $writers | MERGE (d:Person:Feature {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
+            FOREACH (genre IN $genres | MERGE (g:Genre:Feature {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
         """
         while True:
             # print the names of the directors of the movie
@@ -207,7 +209,10 @@ if __name__ == '__main__':
     start = time.time()
     uri = "bolt://localhost:7687"
     importing = DePaulMovieImporter(uri=uri, user="neo4j", password="pippo1")
-    importing.import_event_data(file="/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie/ratings.txt")
+    base_path = "/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie"
+    if (len(sys.argv) > 1):
+        base_path = sys.argv[1]
+    importing.import_event_data(file=base_path + "/ratings.txt")
     importing.import_movie_details()
     end = time.time() - start
     importing.close()
