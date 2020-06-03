@@ -22,18 +22,18 @@ class DePaulMovieImporter(object):
 
     def import_event_data(self, file):
         with self._driver.session() as session:
-            session.run("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (t:Time) ASSERT t.value IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (l:Location) ASSERT l.value IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (c:Companion) ASSERT c.value IS UNIQUE")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (t:Time) ASSERT t.value IS UNIQUE")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (l:Location) ASSERT l.value IS UNIQUE")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (c:Companion) ASSERT c.value IS UNIQUE")
 
-            j = 0;
+            j = 0
             with open(file, 'r+') as in_file:
                 reader = csv.reader(in_file, delimiter=',')
                 next(reader, None)
                 tx = session.begin_transaction()
-                i = 0;
+                i = 0
                 query = """
                         MERGE (user:User {userId: $userId})
                         MERGE (time:Time {value: $time})
@@ -88,11 +88,11 @@ class DePaulMovieImporter(object):
                         """
 
         with self._driver.session() as session:
-            i = 0;
-            j = 0;
+            i = 0
+            j = 0
 
             for item in session.run(get_items_query):
-                item_id = item["itemId"];
+                item_id = item["itemId"]
                 self._movie_queue.put(item_id)
                 i += 1
                 j += 1
@@ -123,15 +123,13 @@ class DePaulMovieImporter(object):
                     with self._print_lock:
                         print("Error while getting. Ignoring", imdb_id)
                     break
-                except :
+                except Exception as e:
                     with self._print_lock:
-                        # TODO: say what kind of error occured
                         print("An error occurred")
                     retry = retry + 1
                     if retry == 10:
                         with self._print_lock:
-                            # TODO: say what kind of error occured
-                            print("Error while getting", imdb_id)
+                            print("Error while getting", imdb_id, e)
                     else:
                         with self._print_lock:
                             print("Failed...... ", retry)
@@ -200,7 +198,11 @@ class DePaulMovieImporter(object):
                     print(movie_id, e)
             self._writing_queue.task_done()
 
-
+    def executeNoException(self, session, query):
+        try:
+            session.run(query)
+        except Exception as e:
+            pass
 
 def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
 
