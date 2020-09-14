@@ -1,1 +1,1 @@
-neo4j.v1
+neo4j
