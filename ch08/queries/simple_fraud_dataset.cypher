@@ -14,7 +14,7 @@ CREATE (Grocery:Merchant {name:"Grocery"})
 CREATE (GasStation:Merchant {name:"Gas Station"})
 CREATE (Supermarket:Merchant {name:"Supermarket"})
 CREATE (JewelryStore:Merchant {name:"Jewelry Store"})
-CREATE (ToysStore:Merchant {name:"Toys Store"})
+CREATE (ToyStore:Merchant {name:"Toy Store"})
 CREATE (Amazon:Merchant {name:"Amazon"})
 CREATE (ATM:Merchant {name:"ATM"})
 
@@ -77,7 +77,7 @@ CREATE (tx11)-[:AT_MERCHANT]->(JewelryStore)
 CREATE (Flavia)-[:MAKES]->(tx11)
 
 CREATE (tx12:Transaction {id: 12, amount: 30.00, date:datetime() - duration('P1D')})
-CREATE (tx12)-[:AT_MERCHANT]->(ToysStore)
+CREATE (tx12)-[:AT_MERCHANT]->(ToyStore)
 CREATE (Flavia)-[:MAKES]->(tx12)
 
 CREATE (tx13:Transaction {id: 13, amount: 100.00, date:datetime() - duration('P2D')})
