@@ -1,7 +1,6 @@
 import spacy
 from neo4j import GraphDatabase
 import neuralcoref
-import pandas as pd
 from ch12.text_processors import TextProcessor
 from util.query_utils import executeNoException
 
@@ -27,25 +26,7 @@ class GraphBasedNLP(object):
             executeNoException(session, "CREATE CONSTRAINT ON (t:Sentence) ASSERT (t.id) IS NODE KEY")
             executeNoException(session, "CREATE CONSTRAINT ON (l:AnnotatedText) ASSERT (l.id) IS NODE KEY")
             executeNoException(session, "CREATE CONSTRAINT ON (l:NamedEntity) ASSERT (l.id) IS NODE KEY")
-
-    def import_masc(self, file):
-        j = 0;
-        for chunk in pd.read_csv(file,
-                                 header=None,
-                                 sep='\t',
-                                 chunksize=10 ** 3):
-            df = chunk
-            for record in df.to_dict("records"):
-                row = record.copy()
-                j += 1
-                self.tokenize_and_store(
-                    row[6],
-                    j,
-                    False)
-                if j % 1000 == 0:
-                    print(j, "lines processed")
-            print(j, "lines processed")
-        print(j, "total lines")
+            executeNoException(session, "CREATE CONSTRAINT ON (l:Entity) ASSERT (l.type, l.id) IS NODE KEY")
 
     def tokenize_and_store(self, text, text_id, storeTag):
         docs = self.nlp.pipe([text])
@@ -54,12 +35,11 @@ class GraphBasedNLP(object):
             spans = self.__text_processor.process_sentences(annotated_text, doc, storeTag, text_id)
             nes = self.__text_processor.process_entities(spans, text_id)
             coref = self.__text_processor.process_coreference(doc, text_id)
-
+            self.__text_processor.build_entities_inferred_graph(text_id)
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
-    basic_nlp.import_masc(
-        file="/Users/ale/neo4j-servers/gpml/dataset/masc_sentences.tsv")
-    #basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3, False)
+    basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physics in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3,
+                                False)
     basic_nlp.close()
