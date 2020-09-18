@@ -88,12 +88,12 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
 
     private void storeKnn(String label, String property, String id, FixedSizeOrderedList<SimilarityItem> knn) {
         String deleteQuery = "MATCH (n:" + label + ")-[s:SIMILARITY]->() " +
-                "WHERE n." + property + " = {id} " +
+                "WHERE n." + property + " = $id " +
                 "DELETE s";
 
         String query = "MATCH (n:" + label + ") " +
-                "WHERE n." + property + " = {id} " +
-                "UNWIND {sims} as sim " +
+                "WHERE n." + property + " = $id " +
+                "UNWIND $sims as sim " +
                 "MATCH (o:" + label + ") " +
                 "WHERE o." + property + " = sim.secondNode " +
                 "CREATE (n)-[s:SIMILARITY {value: toFloat(sim.similarity)   }]->(o)";
@@ -115,14 +115,14 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
     }
 
     private SparseVector getUserSparseVector(Transaction tx, String userId) {
-        String query = "MATCH (u:User {userId: {id}})-[:BUYS]->(i:Item)\n" +
+        String query = "MATCH (u:User {userId: $id})-[:PURCHASES]->(i:Item)\n" +
                 "return id(i) as index, 1.0 as value\n" +
                 "order by index\n";
         return getSparseVector(tx, userId, query);
     }
 
     private SparseVector getItemSparseVector(Transaction tx, String itemId) {
-        String query = "MATCH (u:User )-[:BUYS]->(i:Item {itemId: {id}})\n" +
+        String query = "MATCH (u:User )-[:PURCHASES]->(i:Item {itemId: $id})\n" +
                 "return id(u) as index, 1.0 as value\n" +
                 "order by index\n";
         return getSparseVector(tx, itemId, query);
@@ -175,7 +175,7 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
 
     private float computeScoreItemBased(String userId, String itemId) {
         String query = "MATCH (user:User)-[:BOUGHT]->(item:Item)-[r:SIMILAR]->(target:Item)" +
-                "WHERE user.userId = {userId} AND target.itemId = {targetId}\n" +
+                "WHERE user.userId = $userId AND target.itemId = $targetId\n" +
                 "return sum(r.value) as score";
         return getScore(userId, itemId, query);
     }
@@ -209,16 +209,16 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
 
     private float computeScoreUserBased(String userId, String itemId) {
         String query = "MATCH (user:User)-[:SIMILAR]->(otherUser:User)\n" +
-                "WHERE user.userId = {userId}\n" +
+                "WHERE user.userId = $userId\n" +
                 "WITH otherUser, count(otherUser) as size\n" +
                 "MATCH (otherUser)-[r:BOUGHT]->(target:Target)\n" +
-                "WHERE target.itemId = {targetId}\n" +
+                "WHERE target.itemId = $targetId\n" +
                 "return (1.0f/size)*count(r) as score";
         return getScore(userId, itemId, query);
     }
 
     private List<String> getNotSeenYetItemList(String userId) {
-        String query = "MATCH (user:User {userId:{userId}})\n" +
+        String query = "MATCH (user:User {userId:$userId})\n" +
                 "WITH user\n" +
                 "MATCH (item:Item)\n" +
                 "WHERE NOT EXISTS((user)-[:BOUGHT]->(item))\n" +
