@@ -22,7 +22,8 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
     }
 
     public CollaborativeFilteringRecommender(String uri, String user, String password) {
-        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
+        Config config = Config.builder().withoutEncryption().build();
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
 
     private void computeAndStoreKNN(KNN_TYPE type) {
