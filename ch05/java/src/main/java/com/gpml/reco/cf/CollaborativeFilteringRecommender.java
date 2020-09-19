@@ -174,8 +174,8 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
     }
 
     private float computeScoreItemBased(String userId, String itemId) {
-        String query = "MATCH (user:User)-[:BOUGHT]->(item:Item)-[r:SIMILAR]->(target:Item)" +
-                "WHERE user.userId = $userId AND target.itemId = $targetId\n" +
+        String query = "MATCH (user:User)-[:PURCHASES]->(item:Item)-[r:SIMILARITY]->(target:Item)" +
+                "WHERE user.userId = $userId AND target.itemId = $itemId\n" +
                 "return sum(r.value) as score";
         return getScore(userId, itemId, query);
     }
@@ -208,11 +208,11 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
     }
 
     private float computeScoreUserBased(String userId, String itemId) {
-        String query = "MATCH (user:User)-[:SIMILAR]->(otherUser:User)\n" +
+        String query = "MATCH (user:User)-[:SIMILARITY]->(otherUser:User)\n" +
                 "WHERE user.userId = $userId\n" +
                 "WITH otherUser, count(otherUser) as size\n" +
-                "MATCH (otherUser)-[r:BOUGHT]->(target:Target)\n" +
-                "WHERE target.itemId = $targetId\n" +
+                "MATCH (otherUser)-[r:PURCHASES]->(target:Target)\n" +
+                "WHERE target.itemId = $itemId\n" +
                 "return (1.0f/size)*count(r) as score";
         return getScore(userId, itemId, query);
     }
@@ -221,7 +221,7 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
         String query = "MATCH (user:User {userId:$userId})\n" +
                 "WITH user\n" +
                 "MATCH (item:Item)\n" +
-                "WHERE NOT EXISTS((user)-[:BOUGHT]->(item))\n" +
+                "WHERE NOT EXISTS((user)-[:PURCHASES]->(item))\n" +
                 "return item.itemId";
         List<String> items = new ArrayList<>();
         try (Session session = driver.session()) {
@@ -238,14 +238,22 @@ public class CollaborativeFilteringRecommender implements AutoCloseable {
     }
 
     public static void main(String[] args) throws Exception {
-        try (CollaborativeFilteringRecommender recommender = new CollaborativeFilteringRecommender("bolt://localhost:7687", "neo4j", "pippo1")) {
-            recommender.computeAndStoreKNN(KNN_TYPE.USER);
-            recommender.computeAndStoreKNN(KNN_TYPE.ITEM);
-            List<RecommendationElement> recommendations = recommender.getRecommendationsForUser("userId", 10, KNN_TYPE.USER);
+        try (CollaborativeFilteringRecommender recommender =
+                     new CollaborativeFilteringRecommender("bolt://localhost:7687", "neo4j", "q1")) {
+            // this should be split into 2 pieces - one - calculation of recommendations, second - recommendations for specific user
+            // recommender.computeAndStoreKNN(KNN_TYPE.USER);
+            // recommender.computeAndStoreKNN(KNN_TYPE.ITEM);
+
+
+            // we need to have specific user provided
+            String userId = "121688";
+            System.out.println("User-based recommendations for user " + userId);
+            List<RecommendationElement> recommendations = recommender.getRecommendationsForUser(userId, 10, KNN_TYPE.USER);
             recommendations.forEach(item -> {
                 System.out.println(item.getOtherNode());
             });
-            recommendations = recommender.getRecommendationsForUser("userId", 10, KNN_TYPE.ITEM);
+            System.out.println("Item-based recommendations for user " + userId);
+            recommendations = recommender.getRecommendationsForUser(userId, 10, KNN_TYPE.ITEM);
             recommendations.forEach(item -> {
                 System.out.println(item.getOtherNode());
             });
