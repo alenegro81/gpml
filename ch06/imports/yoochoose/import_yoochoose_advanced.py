@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import sys
 import time
 import operator
 from neo4j import GraphDatabase
@@ -8,11 +9,17 @@ from neo4j import GraphDatabase
 class YoochooseImporter(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
     def close(self):
         self._driver.close()
 
+    def executeNoException(self, session, query):
+        try:
+            session.run(query)
+        except Exception as e:
+            pass
+        
     def import_session_data(self, file):
         dtype = {"sessionID": np.int64, "itemID": np.int64, "category": np.object}
         j = 0;
@@ -55,16 +62,16 @@ class YoochooseImporter(object):
         print("start db ingestion")
 
         with self._driver.session() as session:
-            session.run("CREATE CONSTRAINT ON (s:Session) ASSERT s.sessionId IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (s:Session) ASSERT s.sessionId IS UNIQUE")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
 
             tx = session.begin_transaction()
             i = 0;
             j = 0
             query = """
-                CREATE (session:Session {sessionId: {sessionId}})
+                CREATE (session:Session {sessionId: $sessionId})
                 WITH session
-                UNWIND {items} as entry
+                UNWIND $items as entry
                 MERGE (item:Item {itemId: entry.itemId, category: entry.category})
                 CREATE (click:Click {timestamp: entry.timestamp})
                 CREATE (click)-[:RELATED_TO]->(item)
@@ -97,9 +104,9 @@ class YoochooseImporter(object):
             i = 0;
             j = 0;
             query = """
-                MATCH (session:Session {sessionId: {sessionId}})
-                MATCH (item:Item {itemId: {itemId}})
-                CREATE (buy:Buy:Click {timestamp:{timestamp}})
+                MATCH (session:Session {sessionId: $sessionId})
+                MATCH (item:Item {itemId: $itemId})
+                CREATE (buy:Buy:Click {timestamp: $timestamp})
                 CREATE (session)-[:CONTAINS]->(buy)
                 CREATE (buy)-[:RELATED_TO]->(item)
             """
@@ -142,7 +149,7 @@ class YoochooseImporter(object):
             i = 0;
             j = 0;
             post_processing_query = """
-                MATCH (s:Session {sessionId: {sessionId}})-[:CONTAINS]->(click)
+                MATCH (s:Session {sessionId: $sessionId})-[:CONTAINS]->(click)
                 WITH s, click
                 ORDER BY click.timestamp
                 WITH s, collect(click) as clicks
@@ -175,15 +182,19 @@ def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in strin
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    importer = YoochooseImporter(uri=uri, user="neo4j", password="pippo1")
+    user = "neo4j"
+    password = "q1" # pippo1
+    base_path = "/Users/ale/neo4j-servers/gpml/dataset/yoochoose-data"
+    if (len(sys.argv) > 1):
+        base_path = sys.argv[1]
+    importer = YoochooseImporter(uri=uri, user=user, password=password)
 
     start = time.time()
-    sessions = importer.import_session_data(
-        file="/Users/ale/neo4j-servers/gpml/dataset/yoochoose-data/yoochoose-clicks.dat")
+    sessions = importer.import_session_data(file=base_path + "/yoochoose-clicks.dat")
     print("Time to complete sessions ingestion:", time.time() - start)
 
     intermediate = time.time()
-    importer.import_buys_data(file="/Users/ale/neo4j-servers/gpml/dataset/yoochoose-data/yoochoose-buys.dat",
+    importer.import_buys_data(file=base_path + "/yoochoose-buys.dat",
                               sess_clicks=sessions)
     print("Time to complete buys ingestion:", time.time() - intermediate)
 
