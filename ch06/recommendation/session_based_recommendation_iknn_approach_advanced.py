@@ -1,6 +1,10 @@
 import numpy as np
 from neo4j import GraphDatabase
 import time
+
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
+
 from util.sparse_matrix import SparseMatrix
 from util.lsh import LSH
 from statistics import mean
@@ -9,7 +13,7 @@ from statistics import mean
 class SessionBasedRecommender(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self.__time_to_query = []
         self.__time_to_knn = []
         self.__time_to_sort = []
@@ -86,7 +90,7 @@ class SessionBasedRecommender(object):
 
         query = """
                     MATCH (item:Item)<-[:RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
-                    WHERE item.itemId = {itemId}
+                    WHERE item.itemId = $itemId
                     WITH session 
                     order by click.timestamp desc
                     limit 200
@@ -116,16 +120,16 @@ class SessionBasedRecommender(object):
             knnMap = {str(a) : b for a,b in knn}
             clean_query = """
                 MATCH (item:Item)-[s:SIMILAR_TO]->()
-                WHERE item.itemId = {itemId}
+                WHERE item.itemId = $itemId
                 DELETE s
             """
             query = """
                 MATCH (item:Item)
-                WHERE item.itemId = {itemId}
-                UNWIND keys({knn}) as otherItemId
+                WHERE item.itemId = $itemId
+                UNWIND keys($knn) as otherItemId
                 MATCH (other:Item)
-                WHERE other.itemId = toInt(otherItemId)
-                MERGE (item)-[:SIMILAR_TO {weight: {knn}[otherItemId]}]->(other)
+                WHERE other.itemId = toInteger(otherItemId)
+                MERGE (item)-[:SIMILAR_TO {weight: $knn[otherItemId]}]->(other)
             """
             tx.run(clean_query, {"itemId": item})
             if len(knn) > 0:
@@ -134,6 +138,8 @@ class SessionBasedRecommender(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    recommender = SessionBasedRecommender(uri=uri, user="neo4j", password="pippo1")
+    user = "neo4j"
+    password = "q1" # pippo1
+    recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
     recommender.compute_and_store_similarity();
     recommender.close()
