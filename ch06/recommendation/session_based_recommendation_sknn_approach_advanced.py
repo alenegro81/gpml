@@ -1,6 +1,8 @@
 from annoy import AnnoyIndex
 from neo4j import GraphDatabase
 import time
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
 from util.sparse_matrix import SparseMatrix
 from statistics import mean
 import gc
@@ -9,7 +11,7 @@ import gc
 class SessionBasedRecommender(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self.__time_to_query = []
         self.__time_to_knn = []
         self.__time_to_sort = []
@@ -86,7 +88,7 @@ class SessionBasedRecommender(object):
 
         query = """
                     MATCH (item:Item)<-[:RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
-                    WHERE session.sessionId = {sessionId}
+                    WHERE session.sessionId = $sessionId
                     WITH item 
                     order by click.timestamp desc
                     limit 100
@@ -115,16 +117,16 @@ class SessionBasedRecommender(object):
             knnMap = {str(a): b for a, b in knn}
             clean_query = """
                 MATCH (session:Session)-[s:SIMILAR_TO]->()
-                WHERE session.sessionId = {sessionId}
+                WHERE session.sessionId = $sessionId
                 DELETE s
             """
             query = """
                 MATCH (session:Session)
-                WHERE session.sessionId = {sessionId}
-                UNWIND keys({knn}) as otherSessionId
+                WHERE session.sessionId = $sessionId
+                UNWIND keys($knn) as otherSessionId
                 MATCH (other:Session)
-                WHERE other.sessionId = toInt(otherSessionId)
-                MERGE (session)-[:SIMILAR_TO {weight: {knn}[otherSessionId]}]->(other)
+                WHERE other.sessionId = toInteger(otherSessionId)
+                MERGE (session)-[:SIMILAR_TO {weight: $knn[otherSessionId]}]->(other)
             """
             tx.run(clean_query, {"sessionId": session_id})
             tx.run(query, {"sessionId": session_id, "knn": knnMap})
@@ -134,7 +136,7 @@ class SessionBasedRecommender(object):
         top_items = []
         query = """
             MATCH (target:Session)-[r:SIMILAR_TO]->(d:Session)-[:CONTAINS]->(:Click)-[:RELATED_TO]->(item:Item) 
-            WHERE target.sessionId = {sessionId} 
+            WHERE target.sessionId = $sessionId
             WITH DISTINCT item.itemId as itemId, r
             RETURN itemId, sum(r.weight) as score
             ORDER BY score desc
@@ -150,7 +152,9 @@ class SessionBasedRecommender(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    recommender = SessionBasedRecommender(uri=uri, user="neo4j", password="pippo1")
+    user = "neo4j"
+    password = "q1" # pippo1
+    recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
     recommender.compute_and_store_similarity();
     top10 = recommender.recommend_to(12547, 10);
     print(top10)

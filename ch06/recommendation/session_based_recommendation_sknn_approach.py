@@ -1,12 +1,15 @@
 import numpy as np
 from neo4j import GraphDatabase
+
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
 from util.sparse_vector import cosine_similarity
 
 
 class SessionBasedRecommender(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
     def close(self):
         self._driver.close()
@@ -32,12 +35,12 @@ class SessionBasedRecommender(object):
         list_of_sessions_query = """
                     MATCH (session:Session)
                     RETURN session.sessionId as sessionId
-                    LIMIT 100
+                    LIMIT 2000
                 """
 
         query = """
                     MATCH (item:Item)<-[:RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
-                    WHERE session.sessionId = {sessionId}
+                    WHERE session.sessionId = $sessionId
                     WITH item 
                     ORDER BY id(item)
                     RETURN collect(distinct id(item)) as vector;
@@ -52,7 +55,7 @@ class SessionBasedRecommender(object):
                 i += 1
                 if i % 100 == 0:
                     print(i, "rows processed")
-                    break
+
             print(i, "lines processed")
         print(len(sessions_VSM_sparse))
         return sessions_VSM_sparse
@@ -63,16 +66,16 @@ class SessionBasedRecommender(object):
             knnMap = {str(a) : b.item() for a,b in knn}
             clean_query = """
                 MATCH (session:Session)-[s:SIMILAR_TO]->()
-                WHERE session.sessionId = {sessionId}
+                WHERE session.sessionId = $sessionId
                 DELETE s
             """
             query = """
                 MATCH (session:Session)
-                WHERE session.sessionId = {sessionId}
-                UNWIND keys({knn}) as otherSessionId
+                WHERE session.sessionId = $sessionId
+                UNWIND keys($knn) as otherSessionId
                 MATCH (other:Session)
-                WHERE other.sessionId = toInt(otherSessionId)
-                MERGE (session)-[:SIMILAR_TO {weight: {knn}[otherSessionId]}]->(other)
+                WHERE other.sessionId = toInteger(otherSessionId)
+                MERGE (session)-[:SIMILAR_TO {weight: $knn[otherSessionId]}]->(other)
             """
             tx.run(clean_query, {"sessionId": session_id})
             tx.run(query, {"sessionId": session_id, "knn": knnMap})
@@ -82,7 +85,7 @@ class SessionBasedRecommender(object):
         top_items = []
         query = """
             MATCH (target:Session)-[r:SIMILAR_TO]->(d:Session)-[:CONTAINS]->(:Click)-[:RELATED_TO]->(item:Item) 
-            WHERE target.sessionId = {sessionId} 
+            WHERE target.sessionId = $sessionId
             WITH DISTINCT item.itemId as itemId, r
             RETURN itemId, sum(r.weight) as score
             ORDER BY score desc
@@ -98,8 +101,10 @@ class SessionBasedRecommender(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    recommender = SessionBasedRecommender(uri=uri, user="neo4j", password="pippo1")
+    user = "neo4j"
+    password = "q1" # pippo1
+    recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
     recommender.compute_and_store_similarity();
-    top10 = recommender.recommend_to(12547, 10);
+    top10 = recommender.recommend_to(907, 10);
     recommender.close()
     print(top10)

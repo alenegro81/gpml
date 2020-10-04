@@ -1,12 +1,15 @@
 import numpy as np
 from neo4j import GraphDatabase
+
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
 from util.sparse_vector import cosine_similarity
 
 
 class SessionBasedRecommender(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
     def close(self):
         self._driver.close()
@@ -37,7 +40,7 @@ class SessionBasedRecommender(object):
 
         query = """
                     MATCH (item:Item)<-[:RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
-                    WHERE item.itemId = {itemId}
+                    WHERE item.itemId = $itemId
                     WITH session 
                     ORDER BY id(session)
                     RETURN collect(distinct id(session)) as vector;
@@ -62,16 +65,16 @@ class SessionBasedRecommender(object):
             knnMap = {a : b.item() for a,b in knn}
             clean_query = """
                 MATCH (item:Item)-[s:SIMILAR_TO]->()
-                WHERE item.itemId = {itemId}
+                WHERE item.itemId = $itemId
                 DELETE s
             """
             query = """
                 MATCH (item:Item)
-                WHERE item.itemId = {itemId}
-                UNWIND keys({knn}) as otherItemId
+                WHERE item.itemId = $itemId
+                UNWIND keys($knn) as otherItemId
                 MATCH (other:Item)
-                WHERE other.itemId = toInt(otherItemId)
-                MERGE (item)-[:SIMILAR_TO {weight: {knn}[otherItemId]}]->(other)
+                WHERE other.itemId = toInteger(otherItemId)
+                MERGE (item)-[:SIMILAR_TO {weight: $knn[otherItemId]}]->(other)
             """
             tx.run(clean_query, {"itemId": item})
             tx.run(query, {"itemId": item, "knn": knnMap})
@@ -81,7 +84,7 @@ class SessionBasedRecommender(object):
         top_items = []
         query = """
             MATCH (i:Item)-[r:SIMILAR_TO]->(oi:Item)
-            WHERE i.itemId = {itemId}
+            WHERE i.itemId = $itemId
             RETURN oi.itemId as itemId, r.weight as score
             ORDER BY score desc
             LIMIT %s
@@ -96,8 +99,10 @@ class SessionBasedRecommender(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    recommender = SessionBasedRecommender(uri=uri, user="neo4j", password="pippo1")
-    #recommender.compute_and_store_similarity();
+    user = "neo4j"
+    password = "q1" # pippo1
+    recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
+    recommender.compute_and_store_similarity();
     top10 = recommender.recommend_to(214842060, 10);
     recommender.close()
     print(top10)
