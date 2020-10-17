@@ -63,14 +63,14 @@ class PaySimImporter(object):
 
         print("total number of users after filtering", len(transaction_by_user))
         query = """
-            WITH {row} as map
+            WITH $row as map
             MERGE (source:Entity {id: map.nameOrig})
             MERGE (dest:Entity {id: map.nameDest})
             WITH source, dest, map 
             CALL apoc.create.addLabels( dest, map.destLabels) YIELD node as destNode
             CALL apoc.create.addLabels( source, map.sourceLabels) YIELD node as sourceNode
             WITH source, dest, map
-            CREATE (transaction:Transaction {id: {transId}})
+            CREATE (transaction:Transaction {id: $transId})
             SET transaction += map
             WITH transaction, source, dest, map
             CALL apoc.create.addLabels( transaction, map.transLabels) YIELD node
@@ -117,7 +117,7 @@ class PaySimImporter(object):
             i = 0
             j = 0
             post_processing_query = """
-                MATCH (s:Session {sessionId: {sessionId}})-[:CONTAINS]->(click)
+                MATCH (s:Session {sessionId: $sessionId})-[:CONTAINS]->(click)
                 WITH s, click
                 ORDER BY click.timestamp
                 WITH s, collect(click) as clicks
@@ -150,11 +150,13 @@ def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in strin
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    importer = PaySimImporter(uri=uri, user="neo4j", password="pippo1")
+    importer = PaySimImporter(uri=uri, user="neo4j", password="q1")
 
     start = time.time()
-    sessions = importer.import_paysim(
-        file="/Users/ale/neo4j-servers/gpml/dataset/paysim/PS_20174392719_1491204439457_log.csv")
+    file_path = "/Users/ale/neo4j-servers/gpml/dataset/paysim/PS_20174392719_1491204439457_log.csv"
+    if (len(sys.argv) > 1):
+        file_path = sys.argv[1]
+    sessions = importer.import_paysim(file=file_path)
     print("Time to complete paysim ingestion:", time.time() - start)
 
     # intermediate = time.time()

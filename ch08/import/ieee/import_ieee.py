@@ -9,14 +9,15 @@ import math
 class IEEEImporter(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self._transactions = Queue()
         self._dictionaries = {}
         self._print_lock = threading.Lock()
         with self._driver.session() as session:
-            session.run("CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
-            session.run("CREATE INDEX ON :Transaction(isFraud)")
-            session.run("CREATE INDEX ON :Transaction(isTrain)")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
+            self.executeNoException(session, "CREATE INDEX ON :Transaction(isFraud)")
+            self.executeNoException(session, "CREATE INDEX ON :Transaction(isTrain)")
+            
     def close(self):
         self._driver.close()
 
@@ -94,7 +95,7 @@ class IEEEImporter(object):
 
     def write_transaction(self):
         query = """
-                    WITH {row} as map
+                    WITH $row as map
                     CREATE (transaction:Transaction {transactionId: map.transactionId})
                     SET transaction += map
                 """
@@ -112,17 +113,25 @@ class IEEEImporter(object):
                     print(e, row)
             self._transactions.task_done()
 
+    def executeNoException(self, session, query):
+        try:
+            session.run(query)
+        except Exception as e:
+            pass
+
 
 def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
 
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    importer = IEEEImporter(uri=uri, user="neo4j", password="pippo1")
+    importer = IEEEImporter(uri=uri, user="neo4j", password="q1")
 
     start = time.time()
-    sessions = importer.import_transaction(
-        directory="/Users/ale/neo4j-servers/gpml/dataset/ieee/")
+    base_path = "/Users/ale/neo4j-servers/gpml/dataset/ieee/"
+    if (len(sys.argv) > 1):
+        base_path = sys.argv[1]
+    sessions = importer.import_transaction(directory=base_path)
     print("Time to complete paysim ingestion:", time.time() - start)
 
     # intermediate = time.time()
