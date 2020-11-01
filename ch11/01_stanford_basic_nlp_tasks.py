@@ -6,7 +6,8 @@ class BasicNLP(object):
         stanfordnlp.download(download_label=language, resource_dir='stanfordnlp_resources', confirm_if_exists=False)
 
     def tokenize(self, text):
-        nlp = stanfordnlp.Pipeline()  # This sets up a default neural pipeline in English
+        nlp = stanfordnlp.Pipeline(models_dir='stanfordnlp_resources')  # This sets up a default neural pipeline in English
+        # TODO: investigate why it fails here...
         doc = nlp(text)
         i = 1
         for sentence in doc.sentences:
