@@ -35,12 +35,6 @@ class GraphBasedNLP(object):
             spans = self.__text_processor.process_sentences(annotated_text, doc, storeTag, text_id)
             nes = self.__text_processor.process_entities(spans, text_id)
 
-    def tokenize_and_store(self, text, text_id, storeTag):
-        docs = self.nlp.pipe([text])
-        for doc in docs:
-            annotated_text = self.__text_processor.create_annotated_text(doc, text_id)
-            spans = self.__text_processor.process_sentences(annotated_text, doc, storeTag, text_id)
-            nes = self.__text_processor.process_entities(spans, text_id)
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
