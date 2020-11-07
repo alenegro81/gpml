@@ -15,10 +15,10 @@ class GraphBasedNLP(object):
 
     def create_constraints(self):
         with self._driver.session() as session:
-            session.run("CREATE CONSTRAINT ON (u:Tag) ASSERT (u.id) IS NODE KEY")
-            session.run("CREATE CONSTRAINT ON (i:TagOccurrence) ASSERT (i.id) IS NODE KEY")
-            session.run("CREATE CONSTRAINT ON (t:Sentence) ASSERT (t.id) IS NODE KEY")
-            session.run("CREATE CONSTRAINT ON (l:AnnotatedText) ASSERT (l.id) IS NODE KEY")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (u:Tag) ASSERT (u.id) IS NODE KEY")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (i:TagOccurrence) ASSERT (i.id) IS NODE KEY")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (t:Sentence) ASSERT (t.id) IS NODE KEY")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (l:AnnotatedText) ASSERT (l.id) IS NODE KEY")
 
     def tokenize_and_store(self, text, text_id, storeTag):
         docs = self.nlp.pipe([text], disable=["ner"])
@@ -31,7 +31,7 @@ class GraphBasedNLP(object):
                 i += 1
 
     def create_annotated_text(self, doc, id):
-        query = """MERGE (ann:AnnotatedText {id: {id}})
+        query = """MERGE (ann:AnnotatedText {id: $id})
             RETURN id(ann) as result
         """
         params = {"id": id}
@@ -39,15 +39,15 @@ class GraphBasedNLP(object):
         return results[0]
 
     def store_sentence(self, sentence, annotated_text, text_id, sentence_id, storeTag):
-        sentence_query = """MATCH (ann:AnnotatedText) WHERE id(ann) = {ann_id}
-            MERGE (sentence:Sentence {id: {sentence_unique_id}})
-            SET sentence.text = {text}
+        sentence_query = """MATCH (ann:AnnotatedText) WHERE id(ann) = $ann_id
+            MERGE (sentence:Sentence {id: $sentence_unique_id})
+            SET sentence.text = $text
             MERGE (ann)-[:CONTAINS_SENTENCE]->(sentence)
             RETURN id(sentence) as result
         """
 
-        tag_occurrence_query = """MATCH (sentence:Sentence) WHERE id(sentence) = {sentence_id}
-            WITH sentence, {tag_occurrences} as tags
+        tag_occurrence_query = """MATCH (sentence:Sentence) WHERE id(sentence) = $sentence_id
+            WITH sentence, $tag_occurrences as tags
             FOREACH ( idx IN range(0,size(tags)-2) |
             MERGE (tagOccurrence1:TagOccurrence {id: tags[idx].id})
             SET tagOccurrence1 = tags[idx]
@@ -59,8 +59,8 @@ class GraphBasedNLP(object):
             RETURN id(sentence) as result
         """
 
-        tag_occurrence_with_tag_query = """MATCH (sentence:Sentence) WHERE id(sentence) = {sentence_id}
-            WITH sentence, {tag_occurrences} as tags
+        tag_occurrence_with_tag_query = """MATCH (sentence:Sentence) WHERE id(sentence) = $sentence_id
+            WITH sentence, $tag_occurrences as tags
             FOREACH ( idx IN range(0,size(tags)-2) |
             MERGE (tagOccurrence1:TagOccurrence {id: tags[idx].id})
             SET tagOccurrence1 = tags[idx]
@@ -69,7 +69,7 @@ class GraphBasedNLP(object):
             SET tagOccurrence2 = tags[idx + 1]
             MERGE (sentence)-[:HAS_TOKEN]->(tagOccurrence2)
             MERGE (tagOccurrence1)-[r:HAS_NEXT {sentence: sentence.id}]->(tagOccurrence2))
-            FOREACH (tagItem in [tag_occurrence IN {tag_occurrences} WHERE tag_occurrence.is_stop = False] | 
+            FOREACH (tagItem in [tag_occurrence IN $tag_occurrences WHERE tag_occurrence.is_stop = False] | 
             MERGE (tag:Tag {id: tagItem.lemma}) MERGE (tagOccurrence:TagOccurrence {id: tagItem.id}) MERGE (tag)<-[:REFERS_TO]-(tagOccurrence))
             RETURN id(sentence) as result
         """
@@ -103,7 +103,7 @@ class GraphBasedNLP(object):
         return results[0]
 
     def process_dependencies(self, tag_occurrence_dependencie):
-        tag_occurrence_query = """UNWIND {dependencies} as dependency
+        tag_occurrence_query = """UNWIND $dependencies as dependency
             MATCH (source:TagOccurrence {id: dependency.source})
             MATCH (destination:TagOccurrence {id: dependency.destination})
             MERGE (source)-[:IS_DEPENDENT {type: dependency.type}]->(destination)
@@ -117,6 +117,12 @@ class GraphBasedNLP(object):
                 item = items["result"];
                 results.append(item)
         return results
+
+    def executeNoException(self, session, query):
+        try:
+            session.run(query)
+        except Exception as e:
+            pass
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
