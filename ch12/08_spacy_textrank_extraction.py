@@ -3,6 +3,7 @@ from neo4j import GraphDatabase
 import neuralcoref
 import pytextrank
 import pandas as pd
+import sys
 
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
@@ -72,6 +73,8 @@ if __name__ == '__main__':
     # basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3,
     #                            False)
     #basic_nlp.tokenize_and_store("The Committee awarded the Nobel Prize in Physic to Marie Curie.", 5, False)
-    basic_nlp.import_data(
-        file="/Users/ale/neo4j-servers/gpml/dataset/wiki_movie_plots_deduped.csv")
+    base_path = "/Users/ale/neo4j-servers/gpml/dataset"
+    if (len(sys.argv) > 1):
+        base_path = sys.argv[1]
+    basic_nlp.import_data(file=base_path + "/wiki_movie_plots_deduped.csv")
     basic_nlp.close()

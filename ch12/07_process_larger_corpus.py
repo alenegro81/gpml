@@ -47,7 +47,6 @@ class GraphBasedNLP(object):
                     False)
                 if j % 1000 == 0:
                     print(j, "lines processed")
-            print(j, "lines processed")
         print(j, "total lines")
 
     def tokenize_and_store(self, text, text_id, storeTag):
@@ -62,7 +61,9 @@ class GraphBasedNLP(object):
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
-    basic_nlp.import_masc(
-        file="/Users/ale/neo4j-servers/gpml/dataset/masc_sentences.tsv")
+    base_path = "/Users/ale/neo4j-servers/gpml/dataset"
+    if (len(sys.argv) > 1):
+        base_path = sys.argv[1]
+    basic_nlp.import_masc(file=base_path + "/masc_sentences.tsv")
     #basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3, False)
     basic_nlp.close()

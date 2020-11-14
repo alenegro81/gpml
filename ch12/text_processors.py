@@ -161,13 +161,13 @@ class TextProcessor(object):
         results = self.execute_query(query, params)
         return results[0]
 
-    def process_dependencies(self, tag_occurrence_dependencie):
+    def process_dependencies(self, tag_occurrence_dependencies):
         tag_occurrence_query = """UNWIND $dependencies as dependency
             MATCH (source:TagOccurrence {id: dependency.source})
             MATCH (destination:TagOccurrence {id: dependency.destination})
             MERGE (source)-[:IS_DEPENDENT {type: dependency.type}]->(destination)
                 """
-        self.execute_query(tag_occurrence_query, {"dependencies": tag_occurrence_dependencie})
+        self.execute_query(tag_occurrence_query, {"dependencies": tag_occurrence_dependencies})
 
     def store_keywords(self, document_id, keywords):
         ne_query = """
@@ -230,7 +230,7 @@ class TextProcessor(object):
             MATCH (document:AnnotatedText)
             WHERE document.id = $documentId
             WITH document
-            MATCH (document)-[*3..3]->(ne1:NamedEntity)
+            MATCH (document)-[*2..3]->(ne1:NamedEntity)
             MATCH (entity1:Entity)<-[:REFERS_TO]-(ne1:NamedEntity)-[r:IS_RELATED_TO]->(ne2:NamedEntity)-[:REFERS_TO]->(entity2:Entity)
             MERGE (evidence:Evidence {id: id(r), type:r.type})
             MERGE (rel:Relationship {id: id(r), type:r.type})
