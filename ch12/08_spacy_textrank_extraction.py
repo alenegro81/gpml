@@ -51,7 +51,7 @@ class GraphBasedNLP(object):
                     False)
                 if j % 500 == 0:
                     print(j, "lines processed")
-            print(j, "lines processed")
+
         print(j, "total lines")
 
     def tokenize_and_store(self, text, text_id, storeTag):
