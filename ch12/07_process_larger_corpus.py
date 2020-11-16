@@ -64,6 +64,6 @@ if __name__ == '__main__':
     base_path = "/Users/ale/neo4j-servers/gpml/dataset"
     if (len(sys.argv) > 1):
         base_path = sys.argv[1]
-    basic_nlp.import_masc(file=base_path + "/masc_sentences.tsv")
+    basic_nlp.import_masc(file=os.path.abspath(os.path.join(base_path,  "masc_sentences.tsv")))
     #basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3, False)
     basic_nlp.close()
