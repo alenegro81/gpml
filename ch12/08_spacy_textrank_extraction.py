@@ -3,9 +3,12 @@ from neo4j import GraphDatabase
 import neuralcoref
 import pytextrank
 import pandas as pd
+import sys
+
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 from util.query_utils import executeNoException
-
-
+from ch12.text_processors import TextProcessor
 
 class GraphBasedNLP(object):
 
@@ -17,6 +20,7 @@ class GraphBasedNLP(object):
         tr = pytextrank.TextRank()
         self.nlp.add_pipe(tr.PipelineComponent, name='textrank', last=True)
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+        self.__text_processor = TextProcessor(self.nlp, self._driver)
         self.create_constraints()
 
     def close(self):
@@ -47,21 +51,17 @@ class GraphBasedNLP(object):
                     False)
                 if j % 500 == 0:
                     print(j, "lines processed")
-            print(j, "lines processed")
+
         print(j, "total lines")
 
     def tokenize_and_store(self, text, text_id, storeTag):
         docs = self.nlp.pipe([text])
         for doc in docs:
-            annotated_text = self.create_annotated_text(doc, text_id)
-            spans = self.process_sentences(annotated_text, doc, storeTag, text_id)
-            self.process_entities(spans, text_id)
+            annotated_text = self.__text_processor.create_annotated_text(doc, text_id)
+            spans = self.__text_processor.process_sentences(annotated_text, doc, storeTag, text_id)
+            self.__text_processor.process_entities(spans, text_id)
             #self.process_coreference(doc, text_id)
-            self.process_textrank(doc, text_id)
-
-
-
-
+            self.__text_processor.process_textrank(doc, text_id)
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
@@ -69,6 +69,8 @@ if __name__ == '__main__':
     # basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3,
     #                            False)
     #basic_nlp.tokenize_and_store("The Committee awarded the Nobel Prize in Physic to Marie Curie.", 5, False)
-    basic_nlp.import_data(
-        file="/Users/ale/neo4j-servers/gpml/dataset/wiki_movie_plots_deduped.csv")
+    base_path = "/Users/ale/neo4j-servers/gpml/dataset"
+    if (len(sys.argv) > 1):
+        base_path = sys.argv[1]
+    basic_nlp.import_data(file=os.path.abspath(os.path.join(base_path, "wiki_movie_plots_deduped.csv")))
     basic_nlp.close()
