@@ -5,23 +5,26 @@ from queue import Queue
 from neo4j import GraphDatabase
 import math
 import uuid
+import os.path
+import sys
 
 class CreditCardTransactionImporter(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self._transactions = Queue()
         self._dictionaries = {}
         self._print_lock = threading.Lock()
         with self._driver.session() as session:
-            session.run("CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
-            session.run("CREATE INDEX ON :Transaction(isFraud)")
+            self.executeNoException(session, "CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
+            self.executeNoException(session, "CREATE INDEX ON :Transaction(isFraud)")
+            
     def close(self):
         self._driver.close()
 
     def import_transactions(self, directory):
         j = 0;
-        transactions = pd.read_csv(directory + "creditcard.csv")
+        transactions = pd.read_csv(os.path.join(directory, "creditcard.csv"))
         # Starting threads for parallel writing
         for k in range(50):
             print("starting thread: ", k)
@@ -73,7 +76,7 @@ class CreditCardTransactionImporter(object):
 
     def write_transaction(self):
         query = """
-                    WITH {row} as map
+                    WITH $row as map
                     CREATE (transaction:Transaction {transactionId: map.transactionId})
                     SET transaction += map
                 """
@@ -91,17 +94,24 @@ class CreditCardTransactionImporter(object):
                     print(e, row)
             self._transactions.task_done()
 
+    def executeNoException(self, session, query):
+        try:
+            session.run(query)
+        except Exception as e:
+            pass
 
 def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
 
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    importer = CreditCardTransactionImporter(uri=uri, user="neo4j", password="pippo1")
+    importer = CreditCardTransactionImporter(uri=uri, user="neo4j", password="q1")
 
     start = time.time()
-    importer.import_transactions(
-        directory="/Users/ale/neo4j-servers/gpml/dataset/creditcardfraud/")
+    base_path = "/Users/ale/neo4j-servers/gpml/dataset/creditcardfraud/"
+    if (len(sys.argv) > 1):
+        base_path = sys.argv[1]
+    importer.import_transactions(directory=base_path)
     print("Time to complete paysim ingestion:", time.time() - start)
 
     # intermediate = time.time()
