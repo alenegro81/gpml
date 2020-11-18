@@ -1,4 +1,5 @@
 import spacy
+import sys
 
 class BasicNLP(object):
 
@@ -17,4 +18,8 @@ class BasicNLP(object):
 
 if __name__ == '__main__':
     basic_nlp = BasicNLP(language="en")
-    basic_nlp.tokenize("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize.")
+    if len(sys.argv) > 1:
+        sentence = sys.argv[1]
+    else:
+        sentence = "Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize."
+    basic_nlp.tokenize(sentence)
