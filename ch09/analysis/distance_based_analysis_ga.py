@@ -9,7 +9,7 @@ from random import shuffle
 class DistanceBasedAnalysis(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
     def close(self):
         self._driver.close()
@@ -192,6 +192,7 @@ def mutation(offspring_crossover):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="pippo1")
-    analyzer.feature_selection(num_generations = 40, sol_per_pop = 34, num_parents_mating = 12, newly_generated_elements = 6, threshold=0.1);
+    analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="q1")
+    analyzer.feature_selection(num_generations = 40, sol_per_pop = 34, num_parents_mating = 12,
+                               newly_generated_elements = 6, threshold=0.1);
     analyzer.close()

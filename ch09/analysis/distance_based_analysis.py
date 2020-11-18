@@ -8,12 +8,12 @@ from sklearn.neighbors import NearestNeighbors
 class DistanceBasedAnalysis(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
     def close(self):
         self._driver.close()
 
-    def compute_and_store_similarity(self, k, exact):
+    def compute_and_store_distances(self, k, exact):
         start = time.time()
         data, data_labels = self.get_transaction_vectors()
         print("Time to get vectors:", time.time() - start)
@@ -22,12 +22,14 @@ class DistanceBasedAnalysis(object):
         #new_data = [np.multiply(vector, selected_feature).tolist() for vector in data]
         if exact:
             ann_labels, ann_distances = self.compute_knn(data, data_labels, k)
+            label = "DISTANT_FROM_EXACT"
         else:
             ann_labels, ann_distances = self.compute_ann(data, data_labels, k)
-        print("Time to compute ann:", time.time() - start)
+            label = "DISTANT_FROM"
+        print("Time to compute nearest neighbors:", time.time() - start)
         start = time.time()
-        self.store_ann(data_labels, ann_labels, ann_distances)
-        print("Time to store ann:", time.time() - start)
+        self.store_ann(data_labels, ann_labels, ann_distances, label)
+        print("Time to store nearest neighbors:", time.time() - start)
         print("done")
 
     def compute_ann(self, data, data_labels, k):
@@ -74,20 +76,21 @@ class DistanceBasedAnalysis(object):
             print(i, "lines processed")
         return data, data_labels
 
-    def store_ann(self, data_labels, ann_labels, ann_distances): #ADD the opportunity to specify the nsme of the relationship
+    def store_ann(self, data_labels, ann_labels, ann_distances, label): #ADD the opportunity to specify the nsme of the relationship
         clean_query = """
-            MATCH (transaction:Transaction)-[s:SIMILAR_TO_400_L2]->()
-            WHERE transaction.transactionId = {transactionId}
+            MATCH (transaction:Transaction)-[s:{}]->()
+            WHERE transaction.transactionId = $transactionId
             DELETE s
-        """
+        """.format(label)
+        
         query = """
             MATCH (transaction:Transaction)
-            WHERE transaction.transactionId = {transactionId}
-            UNWIND keys({knn}) as otherSessionId
+            WHERE transaction.transactionId = $transactionId
+            UNWIND keys($knn) as otherSessionId
             MATCH (other:Transaction)
-            WHERE other.transactionId = toInt(otherSessionId) and other.transactionId <> {transactionId}
-            MERGE (transaction)-[:SIMILAR_TO_400_L2 {weight: {knn}[otherSessionId]}]->(other)
-        """
+            WHERE other.transactionId = toInteger(otherSessionId) and other.transactionId <> $transactionId
+            MERGE (transaction)-[:{} {{weight: $knn[otherSessionId]}}]->(other)
+        """.format(label)
         with self._driver.session() as session:
             i = 0;
             for label in data_labels:
@@ -105,12 +108,14 @@ class DistanceBasedAnalysis(object):
                 tx.run(query, {"transactionId": label, "knn": knnMap})
                 tx.commit()
 
-                if i % 10000 == 0:
+                if i % 1000 == 0:
                     print(i, "transactions processed")
 
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="pippo1")
-    analyzer.compute_and_store_similarity(400, False);
+    analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="q1")
+    analyzer.compute_and_store_distances(25, False);
+    # Uncomment this line to calculate exact NNs, but it will take a lot of time!
+    # analyzer.compute_and_store_distances(25, True);
     analyzer.close()
