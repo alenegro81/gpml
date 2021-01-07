@@ -1,23 +1,37 @@
+import site
+
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from neo4j import GraphDatabase
+import sys
+import getopt
+
+
+try:
+    from util.main_paramters_parsing import get_main_parameters
+except Exception as e:
+    site.addsitedir("../../")
+    from util.main_paramters_parsing import get_main_parameters
 
 
 class ContentBasedRecommenderSecondApproach(object):
 
-    # Run this before:
-    # MATCH(feature)
-    # WHERE "Genre" in labels(feature) OR "Director" in labels(feature)
-    # SET feature: Feature
-
     def __init__(self, uri, user, password):
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
-    def recommendTo(self, userId, k):
+    def recommend_to(self, userId, k):
         user_VSM = self.get_user_vector(userId)
-        movies_VSM = self.get_movie_vectors(userId)
+        movies_VSM, titles = self.get_movie_vectors(userId)
         top_k = self.compute_top_k (user_VSM, movies_VSM, k);
-        return top_k
+        results = []
+        for movie in top_k:
+            item = {}
+            item["movie_id"] = movie[0]
+            item["title"] = titles[movie[0]]
+            item["score"] = movie[1]
+            results.append(item)
+            print(item)
+        return results
 
     def compute_top_k(self, user, movies, k):
         dtype = [ ('movieId', 'U10'),('value', 'f4')]
@@ -57,7 +71,7 @@ class ContentBasedRecommenderSecondApproach(object):
                 WHERE NOT EXISTS((user)-[]->(movie)) AND EXISTS((user)-[]->(feature))
                 WITH movie, count(i) as featuresCount
                 WHERE featuresCount > 5
-                RETURN movie.movieId as movieId
+                RETURN movie.movieId as movieId, movie.title as title
             """
 
         query = """
@@ -71,26 +85,36 @@ class ContentBasedRecommenderSecondApproach(object):
                 RETURN collect(value) as vector;
             """
         movies_VSM = {}
+        titles = {}
+
         with self._driver.session() as session:
             tx = session.begin_transaction()
 
             i = 0
             for movie in tx.run(list_of_moview_query, {"userId": user_id}):
                 movie_id = movie["movieId"];
+                title = movie["title"];
                 vector = tx.run(query, {"movieId": movie_id})
                 movies_VSM[movie_id] = vector.single()[0]
+                titles[movie_id] = title
                 i += 1
                 if i % 100 == 0:
                     print(i, "lines processed")
             print(i, "lines processed")
-        print(len(movies_VSM))
-        return movies_VSM
+        return movies_VSM, titles
 
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    recommender = ContentBasedRecommenderSecondApproach(uri=uri, user="neo4j", password="pippo1")
-    top10 = recommender.recommendTo("598", 10); #Replace 598 with any other user id you are interested in
-    # would be nice to enrich this information with at least titles
+    neo4j_user, neo4j_password, base_path, uri, opts, args = get_main_parameters(__file__, sys.argv[1:], 't:', ['target_user='])
+    target_user = "598"
+    try:
+        for opt, arg in opts:
+            if opt in ("-t", "--target_user"):
+                target_user = arg
+    except getopt.GetoptError:
+        print(__file__ , "Specify the user with -t <user id>")
+        print("Setting the default to:", target_user)
+    recommender = ContentBasedRecommenderSecondApproach(uri=uri, user=neo4j_user, password=neo4j_password)
+    top10 = recommender.recommend_to(target_user, 10); #Replace 598 with any other user id you are interested in
     print(top10)
 
