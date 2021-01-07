@@ -1,15 +1,28 @@
+import site
+
 import csv
 import time
 import threading
 from queue import Queue
 from neo4j import GraphDatabase
 from imdb import IMDb
+import sys
+import os
 
+try:
+    from util.neo4j_util import execute_without_exception
+    from util.string_util import strip
+    from util.main_paramters_parsing import get_main_parameters
+except Exception as e:
+    site.addsitedir("../../../")
+    from util.neo4j_util import execute_without_exception
+    from util.string_util import strip
+    from util.main_paramters_parsing import get_main_parameters
 
 class MoviesImporterParallel(object):
 
     def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self._ia = IMDb(reraiseExceptions=True)
         self._movie_queue = Queue()
         self._writing_queue = Queue()
@@ -23,8 +36,8 @@ class MoviesImporterParallel(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
-                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
                 tx = session.begin_transaction()
                 i = 0;
                 j = 0;
@@ -60,7 +73,7 @@ class MoviesImporterParallel(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                self.executeNoException(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
 
                 tx = session.begin_transaction()
                 i = 0;
@@ -97,7 +110,7 @@ class MoviesImporterParallel(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE")
                 i = 0;
                 j = 0;
                 for k in range(50):
@@ -205,21 +218,36 @@ class MoviesImporterParallel(object):
                 except Exception as e:
                     print(movie_id, e)
 
-    def executeNoException(self, session, query):
-        try:
-            session.run(query)
-        except Exception as e:
-            pass
-
-def strip(string): return''.join([c if 0 < ord(c) < 128 else ' ' for c in string]) #removes non utf-8 chars from string within cell
-
-
 if __name__ == '__main__':
+    neo4j_user, neo4j_password, base_path, uri = get_main_parameters(__file__, sys.argv[1:])
+
+    if not base_path:
+        print("source path directory is mandatory. Setting it to defaul.")
+        base_path = "../../../dataset/movielens/ml-latest-small"
+
+    if not os.path.isdir(base_path):
+        print(base_path, "It isn't a directory")
+        sys.exit(1)
+
+    movies_path = base_path + "/movies.csv"
+    links_path = base_path + "/links.csv"
+    ratings_path = base_path + "/ratings.csv"
+
+    if not os.path.isfile(movies_path):
+        print(movies_path, "doesn't exist in ", base_path)
+        sys.exit(1)
+    if not os.path.isfile(links_path):
+        print(links_path, "doesn't exist in ", base_path)
+        sys.exit(1)
+    if not os.path.isfile(ratings_path):
+        print(ratings_path, "doesn't exist in ", base_path)
+        sys.exit(1)
+
+    importing = MoviesImporterParallel(uri=uri, user=neo4j_user, password=neo4j_password)
     start = time.time()
-    uri = "bolt://localhost:7687"
-    importing = MoviesImporterParallel(uri=uri, user="neo4j", password="pippo1")
-    #importing.import_movies(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/movies.csv")
-    importing.import_movie_details(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/links.csv")
-    importing.import_user_item(file="/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small/ratings.csv")
+    importing.import_movies(file=movies_path)
+    importing.import_movie_details(file=links_path)
+    importing.import_user_item(file=ratings_path)
     end = time.time() - start
+    importing.close()
     print("Time to complete:", end)

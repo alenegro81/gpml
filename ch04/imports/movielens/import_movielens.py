@@ -1,8 +1,20 @@
+import site
 import csv
 import time
 from neo4j import GraphDatabase
 from imdb import IMDb
 import sys
+import os
+
+try:
+    from util.neo4j_util import execute_without_exception
+    from util.string_util import strip
+    from util.main_paramters_parsing import get_main_parameters
+except Exception as e:
+    site.addsitedir("../../../")
+    from util.neo4j_util import execute_without_exception
+    from util.string_util import strip
+    from util.main_paramters_parsing import get_main_parameters
 
 class MoviesImporter(object):
 
@@ -13,20 +25,14 @@ class MoviesImporter(object):
     def close(self):
         self._driver.close()
 
-    def executeNoException(self, session, query):
-        try:
-            session.run(query)
-        except Exception as e:
-            pass
-    
     def import_movies(self, file):
         print("import movies")
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
-                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
 
                 tx = session.begin_transaction()
 
@@ -39,11 +45,11 @@ class MoviesImporter(object):
                             title = strip(row[1])
                             genres = strip(row[2])
                             query = """
-                            CREATE (movie:Movie {movieId: $movieId, title: $title})
-                            with movie
-                            UNWIND $genres as genre
-                            MERGE (g:Genre {genre: genre})
-                            MERGE (movie)-[:HAS_GENRE]->(g)
+                                CREATE (movie:Movie {movieId: $movieId, title: $title})
+                                with movie
+                                UNWIND $genres as genre
+                                MERGE (g:Genre {genre: genre})
+                                MERGE (movie)-[:HAS_GENRE]->(g)
                             """
                             tx.run(query, {"movieId": movie_id, "title": title, "genres": genres.split("|")})
                             i += 1
@@ -67,7 +73,7 @@ class MoviesImporter(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                self.executeNoException(session, "CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE;")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE;")
                 tx = session.begin_transaction()
                 i = 0;
                 j = 0;
@@ -94,13 +100,13 @@ class MoviesImporter(object):
 
     def process_movie_info(self, tx, movie_info, movie_id):
         query = """
-        MATCH (movie:Movie {movieId: $movieId})
-        SET movie.plot = $plot
-        FOREACH (director IN $directors | MERGE (d:Person {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
-        FOREACH (actor IN $actors | MERGE (d:Person {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
-        FOREACH (producer IN $producers | MERGE (d:Person {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
-        FOREACH (writer IN $writers | MERGE (d:Person {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
-        FOREACH (genre IN $genres | MERGE (g:Genre {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
+            MATCH (movie:Movie {movieId: $movieId})
+            SET movie.plot = $plot
+            FOREACH (director IN $directors | MERGE (d:Person {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
+            FOREACH (actor IN $actors | MERGE (d:Person {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
+            FOREACH (producer IN $producers | MERGE (d:Person {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
+            FOREACH (writer IN $writers | MERGE (d:Person {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
+            FOREACH (genre IN $genres | MERGE (g:Genre {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
         """
         directors = []
         for director in movie_info['directors']:
@@ -137,7 +143,7 @@ class MoviesImporter(object):
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                self.executeNoException(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+                execute_without_exception(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
 
                 tx = session.begin_transaction()
                 i = 0;
@@ -149,9 +155,9 @@ class MoviesImporter(object):
                             rating = strip(row[2])
                             timestamp = strip(row[3])
                             query = """
-                            MATCH (movie:Movie {movieId: $movieId})
-                            MERGE (user:User {userId: $userId})
-                            MERGE (user)-[:RATES {rating: $rating, timestamp: $timestamp}]->(movie)
+                                MATCH (movie:Movie {movieId: $movieId})
+                                MERGE (user:User {userId: $userId})
+                                MERGE (user)-[:RATES {rating: $rating, timestamp: $timestamp}]->(movie)
                             """
                             tx.run(query, {"movieId":movie_id, "userId": user_id, "rating":rating, "timestamp": timestamp})
                             i += 1
@@ -163,20 +169,37 @@ class MoviesImporter(object):
                         print(e, row, reader.line_num)
                 tx.commit()
 
-def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
-
 
 if __name__ == '__main__':
+    neo4j_user, neo4j_password, base_path, uri = get_main_parameters(__file__, sys.argv[1:])
+
+    if not base_path:
+        print("source path directory is mandatory. Setting it to defaul.")
+        base_path = "../../../dataset/movielens/ml-latest-small"
+
+    if not os.path.isdir(base_path):
+        print(base_path, "It isn't a directory")
+        sys.exit(1)
+
+    movies_path = base_path + "/movies.csv"
+    links_path = base_path + "/links.csv"
+    ratings_path = base_path + "/ratings.csv"
+
+    if not os.path.isfile(movies_path):
+        print(movies_path, "doesn't exist in ", base_path)
+        sys.exit(1)
+    if not os.path.isfile(links_path):
+        print(links_path, "doesn't exist in ", base_path)
+        sys.exit(1)
+    if not os.path.isfile(ratings_path):
+        print(ratings_path, "doesn't exist in ", base_path)
+        sys.exit(1)
+
+    importing = MoviesImporter(uri=uri, user=neo4j_user, password=neo4j_password)
     start = time.time()
-    uri = "bolt://localhost:7687"
-    user = "neo4j"
-    password = "q1" # pippo1
-    importing = MoviesImporter(uri=uri, user=user, password=password)
-    base_path = "/Users/ale/neo4j-servers/gpml/dataset/ml-latest-small"
-    if (len(sys.argv) > 1):
-        base_path = sys.argv[1]
-    importing.import_movies(file=base_path + "/movies.csv")
-    importing.import_movie_details(file=base_path + "/links.csv")
-    importing.import_user_item(file=base_path + "/ratings.csv")
+    importing.import_movies(file=movies_path)
+    importing.import_movie_details(file=links_path)
+    importing.import_user_item(file=ratings_path)
     end = time.time() - start
+    importing.close()
     print("Time to complete:", end)
