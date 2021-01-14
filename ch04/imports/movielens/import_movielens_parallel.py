@@ -52,7 +52,7 @@ class MoviesImporterParallel(object):
                                 with movie
                                 UNWIND $genres as genre
                                 MERGE (g:Genre {genre: genre})
-                                MERGE (movie)-[:HAS_GENRE]->(g)
+                                MERGE (movie)-[:HAS]->(g)
                             """
                             tx.run(query, {"movieId":movie_id, "title": title, "genres":genres.split("|")})
                             i += 1
@@ -89,7 +89,7 @@ class MoviesImporterParallel(object):
                             query = """
                                 MATCH (movie:Movie {movieId: $movieId})
                                 MERGE (user:User {userId: $userId})
-                                MERGE (user)-[:RATES {rating: $rating, timestamp: $timestamp}]->(movie)
+                                MERGE (user)-[:RATED {rating: $rating, timestamp: $timestamp}]->(movie)
                             """
                             tx.run(query, {"movieId":movie_id, "userId": user_id, "rating":rating, "timestamp": timestamp})
                             i += 1
@@ -172,9 +172,9 @@ class MoviesImporterParallel(object):
             SET movie.plot = $plot
             FOREACH (director IN $directors | MERGE (d:Person {name: director}) SET d:Director MERGE (d)-[:DIRECTED]->(movie))
             FOREACH (actor IN $actors | MERGE (d:Person {name: actor}) SET d:Actor MERGE (d)-[:ACTS_IN]->(movie))
-            FOREACH (producer IN $producers | MERGE (d:Person {name: producer}) SET d:Producer MERGE (d)-[:PRODUCES]->(movie))
-            FOREACH (writer IN $writers | MERGE (d:Person {name: writer}) SET d:Writer MERGE (d)-[:WRITES]->(movie))
-            FOREACH (genre IN $genres | MERGE (g:Genre {genre: genre}) MERGE (movie)-[:HAS_GENRE]->(g))
+            FOREACH (producer IN $producers | MERGE (d:Person {name: producer}) SET d:Producer MERGE (d)-[:PRODUCED]->(movie))
+            FOREACH (writer IN $writers | MERGE (d:Person {name: writer}) SET d:Writer MERGE (d)-[:WRITED]->(movie))
+            FOREACH (genre IN $genres | MERGE (g:Genre {genre: genre}) MERGE (movie)-[:HAS]->(g))
         """
         while True:
             # print the names of the directors of the movie

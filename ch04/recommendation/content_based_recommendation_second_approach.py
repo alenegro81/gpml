@@ -45,7 +45,7 @@ class ContentBasedRecommenderSecondApproach(object):
 
     def get_user_vector(self, user_id):
         query = """
-                MATCH p=(user:User)-[:WATCHED|RATES]->(movie)
+                MATCH p=(user:User)-[:WATCHED|RATED]->(movie)
                 WHERE user.userId = $userId
                 with count(p) as total
                 MATCH (feature:Feature)
@@ -67,7 +67,7 @@ class ContentBasedRecommenderSecondApproach(object):
 
     def get_movie_vectors(self, user_id):
         list_of_moview_query = """
-                MATCH (movie:Movie)-[r:DIRECTED|HAS_GENRE]-(feature)<-[i:INTERESTED_IN]-(user:User {userId: $userId})
+                MATCH (movie:Movie)-[r:DIRECTED|HAS]-(feature)<-[i:INTERESTED_IN]-(user:User {userId: $userId})
                 WHERE NOT EXISTS((user)-[]->(movie)) AND EXISTS((user)-[]->(feature))
                 WITH movie, count(i) as featuresCount
                 WHERE featuresCount > 5
@@ -80,7 +80,7 @@ class ContentBasedRecommenderSecondApproach(object):
                 ORDER BY id(feature)
                 MATCH (movie:Movie)
                 WHERE movie.movieId = $movieId
-                OPTIONAL MATCH (movie)-[r:DIRECTED|HAS_GENRE]-(feature)
+                OPTIONAL MATCH (movie)-[r:DIRECTED|HAS]-(feature)
                 WITH CASE WHEN r IS null THEN 0 ELSE 1 END as value
                 RETURN collect(value) as vector;
             """
