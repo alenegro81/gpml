@@ -43,7 +43,7 @@ class ContentBasedRecommender(object):
                 ORDER BY id(feature)
                 MATCH (movie:Movie)
                 WHERE movie.movieId = $movieId
-                OPTIONAL MATCH (movie)-[r:DIRECTED|HAS_GENRE]-(feature)
+                OPTIONAL MATCH (movie)-[r:DIRECTED|HAS]-(feature)
                 WITH CASE WHEN r IS null THEN 0 ELSE 1 END as value
                 RETURN collect(value) as vector;
             """
