@@ -22,7 +22,7 @@ class ContentBasedRecommenderSecondApproach(object):
     def recommend_to(self, userId, k):
         user_VSM = self.get_user_vector(userId)
         movies_VSM, titles = self.get_movie_vectors(userId)
-        top_k = self.compute_top_k (user_VSM, movies_VSM, k);
+        top_k = self.compute_top_k (user_VSM, movies_VSM, k)
         results = []
         for movie in top_k:
             item = {}
@@ -92,8 +92,8 @@ class ContentBasedRecommenderSecondApproach(object):
 
             i = 0
             for movie in tx.run(list_of_moview_query, {"userId": user_id}):
-                movie_id = movie["movieId"];
-                title = movie["title"];
+                movie_id = movie["movieId"]
+                title = movie["title"]
                 vector = tx.run(query, {"movieId": movie_id})
                 movies_VSM[movie_id] = vector.single()[0]
                 titles[movie_id] = title
@@ -115,6 +115,6 @@ if __name__ == '__main__':
         print(__file__ , "Specify the user with -t <user id>")
         print("Setting the default to:", target_user)
     recommender = ContentBasedRecommenderSecondApproach(uri=uri, user=neo4j_user, password=neo4j_password)
-    top10 = recommender.recommend_to(target_user, 10); #Replace 598 with any other user id you are interested in
+    top10 = recommender.recommend_to(target_user, 10) #Replace 598 with any other user id you are interested in
     print(top10)
 

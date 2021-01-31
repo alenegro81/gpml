@@ -7,11 +7,11 @@ from util.query_utils import executeNoException
 
 class GraphBasedNLP(object):
 
-    def __init__(self, language, uri, user, password):
+    def __init__(self, uri, user, password):
         spacy.prefer_gpu()
         self.nlp = spacy.load('en_core_web_sm')
         coref = neuralcoref.NeuralCoref(self.nlp.vocab)
-        self.nlp.add_pipe(coref, name='neuralcoref');
+        self.nlp.add_pipe(coref, name='neuralcoref')
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self.__text_processor = TextProcessor(self.nlp, self._driver)
         self.create_constraints()
@@ -39,7 +39,7 @@ class GraphBasedNLP(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
+    basic_nlp = GraphBasedNLP(uri=uri, user="neo4j", password="pippo1")
     basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physics in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3,
                                 False)
     basic_nlp.close()

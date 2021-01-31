@@ -5,6 +5,8 @@ import pandas as pd
 import sys,os
 
 from util.query_utils import executeNoException
+from ch12.text_processors import TextProcessor
+
 
 
 class GraphBasedNLP(object):
@@ -13,7 +15,7 @@ class GraphBasedNLP(object):
         spacy.prefer_gpu()
         self.nlp = spacy.load('en_core_web_sm')
         coref = neuralcoref.NeuralCoref(self.nlp.vocab)
-        self.nlp.add_pipe(coref, name='neuralcoref');
+        self.nlp.add_pipe(coref, name='neuralcoref')
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self.__text_processor = TextProcessor(self.nlp, self._driver)
         self.create_constraints()
@@ -30,7 +32,7 @@ class GraphBasedNLP(object):
             executeNoException(session, "CREATE CONSTRAINT ON (l:NamedEntity) ASSERT (l.id) IS NODE KEY")
 
     def import_masc(self, file):
-        j = 0;
+        j = 0
         for chunk in pd.read_csv(file,
                                  header=None,
                                  sep='\t',
@@ -60,7 +62,7 @@ if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
     base_path = "/Users/ale/neo4j-servers/gpml/dataset"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         base_path = sys.argv[1]
     basic_nlp.import_masc(file=os.path.abspath(os.path.join(base_path,  "masc_sentences.tsv")))
     #basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3, False)

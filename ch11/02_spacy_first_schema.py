@@ -1,6 +1,6 @@
 import spacy
 from neo4j import GraphDatabase
-from spacy.lang.en.stop_words import STOP_WORDS
+
 
 class GraphBasedNLP(object):
 
@@ -99,7 +99,7 @@ class GraphBasedNLP(object):
         results = []
         with self._driver.session() as session:
             for items in session.run(query, params):
-                item = items["result"];
+                item = items["result"]
                 results.append(item)
         return results
 

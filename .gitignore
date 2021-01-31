@@ -3,3 +3,6 @@
 /ch11/masc_word_sense_sentence_corpus.V1.0/
 /.venv/
 /.idea/
+/ch06/imports/yoochoose/dataset-README.txt
+ch06/imports/yoochoose/yoochoose-*.dat
+/ch06/imports/yoochoose/yoochoose-data.7z

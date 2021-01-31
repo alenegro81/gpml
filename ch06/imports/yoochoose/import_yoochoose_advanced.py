@@ -22,7 +22,7 @@ class YoochooseImporter(object):
         
     def import_session_data(self, file):
         dtype = {"sessionID": np.int64, "itemID": np.int64, "category": np.object}
-        j = 0;
+        j = 0
         sess_clicks = {}
         for chunk in pd.read_csv(file,
                                  header=0,
@@ -66,7 +66,7 @@ class YoochooseImporter(object):
             self.executeNoException(session, "CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
 
             tx = session.begin_transaction()
-            i = 0;
+            i = 0
             j = 0
             query = """
                 CREATE (session:Session {sessionId: $sessionId})
@@ -101,8 +101,8 @@ class YoochooseImporter(object):
     def import_buys_data(self, file, sess_clicks):
         with self._driver.session() as session:
             dtype = {"sessionID": np.int64, "itemID": np.int64, "price": np.float, "quantity": np.int}
-            i = 0;
-            j = 0;
+            i = 0
+            j = 0
             query = """
                 MATCH (session:Session {sessionId: $sessionId})
                 MATCH (item:Item {itemId: $itemId})
@@ -146,8 +146,8 @@ class YoochooseImporter(object):
         print("start post processing")
         with self._driver.session() as session:
             tx = session.begin_transaction()
-            i = 0;
-            j = 0;
+            i = 0
+            j = 0
             post_processing_query = """
                 MATCH (s:Session {sessionId: $sessionId})-[:CONTAINS]->(click)
                 WITH s, click
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     user = "neo4j"
     password = "q1" # pippo1
     base_path = "/Users/ale/neo4j-servers/gpml/dataset/yoochoose-data"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         base_path = sys.argv[1]
     importer = YoochooseImporter(uri=uri, user=user, password=password)
 

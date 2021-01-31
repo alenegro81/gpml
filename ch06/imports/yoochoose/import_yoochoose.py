@@ -24,7 +24,7 @@ class YoochooseImporter(object):
             self.executeNoException(session, "CREATE CONSTRAINT ON (s:Session) ASSERT s.sessionId IS UNIQUE")
             self.executeNoException(session, "CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
             dtype = {"sessionID": np.int64, "itemID": np.int64, "category": np.object}
-            j = 0;
+            j = 0
             for chunk in pd.read_csv(file,
                                      header=0,
                                      dtype=dtype,
@@ -33,7 +33,7 @@ class YoochooseImporter(object):
                                      chunksize=10**6):
                 df = chunk
                 tx = session.begin_transaction()
-                i = 0;
+                i = 0
                 query = """
                         MERGE (session:Session {sessionId: $sessionId})
                         MERGE (item:Item {itemId: $itemId, category: $category})
@@ -75,7 +75,7 @@ class YoochooseImporter(object):
     def import_buys_data(self, file):
         with self._driver.session() as session:
             dtype = {"sessionID": np.int64, "itemID": np.int64, "price": np.float, "quantity": np.int}
-            j = 0;
+            j = 0
             for chunk in pd.read_csv(file,
                                      header=0,
                                      dtype=dtype,
@@ -84,7 +84,7 @@ class YoochooseImporter(object):
                                      chunksize=10**6):
                 df = chunk
                 tx = session.begin_transaction()
-                i = 0;
+                i = 0
                 query = """
                         MATCH (session:Session {sessionId: $sessionId})
                         MATCH (item:Item {itemId: $itemId})
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     user = "neo4j"
     password = "q1" # pippo1
     base_path = "/Users/ale/neo4j-servers/gpml/dataset/yoochoose-data"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         base_path = sys.argv[1]
     importing = YoochooseImporter(uri=uri, user=user, password=password)
     importing.import_session_data(file=base_path + "/yoochoose-clicks.dat")

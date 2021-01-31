@@ -3,6 +3,7 @@ import time
 from neo4j import GraphDatabase
 import sys
 
+
 class RetailRocketImporter(object):
 
     def __init__(self, uri, user, password):
@@ -16,7 +17,7 @@ class RetailRocketImporter(object):
             session.run(query)
         except Exception as e:
             pass
-        
+
     def import_user_item(self, file):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
@@ -27,8 +28,8 @@ class RetailRocketImporter(object):
                 self.executeNoException(session, "CREATE CONSTRAINT ON (u:Item) ASSERT u.itemId IS UNIQUE")
 
                 tx = session.begin_transaction()
-                i = 0;
-                j = 0;
+                i = 0
+                j = 0
                 query = """
                     MERGE (item:Item {itemId: $itemId})
                     MERGE (user:User {userId: $userId})
@@ -43,7 +44,7 @@ class RetailRocketImporter(object):
                             item_id = strip(row[3])
 
                             if event_type == "transaction":
-                                tx.run(query, {"itemId":item_id, "userId": user_id,  "timestamp": timestamp})
+                                tx.run(query, {"itemId": item_id, "userId": user_id, "timestamp": timestamp})
                                 i += 1
                                 j += 1
                                 if i == 1000:
@@ -59,13 +60,14 @@ class RetailRocketImporter(object):
 
 def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
 
+
 if __name__ == '__main__':
     start = time.time()
     uri = "bolt://localhost:7687"
     user = "neo4j"
-    password = "q1" # pippo1
+    password = "q1"  # pippo1
     file_path = "/Users/ale/neo4j-servers/gpml/dataset/retailrocket-recommender-system-dataset/events.csv"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         file_path = sys.argv[1]
     importing = RetailRocketImporter(uri=uri, user=user, password=password)
     importing.import_user_item(file=file_path)

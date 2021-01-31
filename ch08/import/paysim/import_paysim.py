@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
 import time
-import operator
 from neo4j import GraphDatabase
-
+import sys
 
 class PaySimImporter(object):
 
@@ -28,7 +27,7 @@ class PaySimImporter(object):
             "isFlaggedFraud": np.int32
         }
 
-        j = 0;
+        j = 0
         transaction_by_user = {}
         for chunk in pd.read_csv(file,
                                  header=0,
@@ -154,9 +153,9 @@ if __name__ == '__main__':
 
     start = time.time()
     file_path = "/Users/ale/neo4j-servers/gpml/dataset/paysim/PS_20174392719_1491204439457_log.csv"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         file_path = sys.argv[1]
-    sessions = importer.import_paysim(file=file_path)
+    importer.import_paysim(file=file_path)
     print("Time to complete paysim ingestion:", time.time() - start)
 
     # intermediate = time.time()

@@ -4,7 +4,7 @@ import threading
 from queue import Queue
 from neo4j import GraphDatabase
 import math
-
+import sys
 
 class IEEEImporter(object):
 
@@ -22,7 +22,7 @@ class IEEEImporter(object):
         self._driver.close()
 
     def import_transaction(self, directory):
-        j = 0;
+        j = 0
 
         train_transactions = pd.read_csv(directory + "train_transaction.csv")
         train_transactions.set_index("TransactionID", inplace=True, drop = False)
@@ -59,8 +59,8 @@ class IEEEImporter(object):
                 'transactionAmt': row['TransactionAmt'],
                 'productCd': row['ProductCD']}
             vector = self.normalize(row, ['TransactionID', 'isFraud', 'TransactionDT', 'train'])
-            transaction['vector'] = vector;
-            self._transactions.put(transaction);
+            transaction['vector'] = vector
+            self._transactions.put(transaction)
             # ADD ROW
             if j % 10000 == 0:
                 print(j, "lines processed")
@@ -129,9 +129,9 @@ if __name__ == '__main__':
 
     start = time.time()
     base_path = "/Users/ale/neo4j-servers/gpml/dataset/ieee/"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         base_path = sys.argv[1]
-    sessions = importer.import_transaction(directory=base_path)
+    importer.import_transaction(directory=base_path)
     print("Time to complete paysim ingestion:", time.time() - start)
 
     # intermediate = time.time()

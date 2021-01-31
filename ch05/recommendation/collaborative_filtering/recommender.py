@@ -1,4 +1,3 @@
-import itertools
 from enum import Enum
 from typing import Dict, List
 
@@ -8,7 +7,7 @@ from util.fixed_heapq import FixedHeap
 from util.sparse_vector import cosine_similarity
 
 
-class BaseRecomander(object):
+class BaseRecommender(object):
     label = None
     property = None
     sparse_vector_query = None
@@ -108,7 +107,7 @@ class BaseRecomander(object):
         return result[0]
 
 
-class UserRecomander(BaseRecomander):
+class UserRecommender(BaseRecommender):
     label = "User"
     property = "userId"
     sparse_vector_query = """
@@ -126,7 +125,7 @@ class UserRecomander(BaseRecomander):
     """
 
 
-class ItemRecomander(BaseRecomander):
+class ItemRecommender(BaseRecommender):
     label = "User"
     property = "userId"
     sparse_vector_query = """
@@ -148,9 +147,9 @@ class Recommender(object):
 
     def __init__(self, uri: str, user: str, password: str):
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
-        self.strategies: Dict[Recommender.KNNType, BaseRecomander] = {
-            Recommender.KNNType.USER: UserRecomander(uri, user, password),
-            Recommender.KNNType.ITEM: ItemRecomander(uri, user, password)
+        self.strategies: Dict[Recommender.KNNType, BaseRecommender] = {
+            Recommender.KNNType.USER: UserRecommender(uri, user, password),
+            Recommender.KNNType.ITEM: ItemRecommender(uri, user, password)
         }
 
     def compute_and_store_KNN(self, type_: KNNType) -> None:

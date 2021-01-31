@@ -43,7 +43,7 @@ class SessionBasedRecommender(object):
 
         i = 0
         for ix in range(overall_size):
-            knn = self.compute_knn(ix, items_id, items_VSM, lsh, 10);
+            knn = self.compute_knn(ix, items_id, items_VSM, lsh, 10)
             start = time.time()
             self.store_knn(items_id[ix], knn)
             self.__time_to_store.append(time.time() - start)
@@ -62,10 +62,10 @@ class SessionBasedRecommender(object):
 
     def compute_knn(self, ix, items_id, items_VSM, lsh, k):
         knn_values = []
-        X_sim = items_VSM.getrow(ix);
+        X_sim = items_VSM.getrow(ix)
         item_id = items_id[ix]
         start = time.time()
-        other_items = lsh.query(X_sim, num_results=k, distance_func="cosine");
+        other_items = lsh.query(X_sim, num_results=k, distance_func="cosine")
         self.__time_to_query.append(time.time() - start)
         start = time.time()
         for other_item in other_items:
@@ -100,7 +100,7 @@ class SessionBasedRecommender(object):
         with self._driver.session() as session:
             i = 0
             for item in session.run(list_of_items_query):
-                item_id = item["itemId"];
+                item_id = item["itemId"]
                 vector = session.run(query, {"itemId": item_id})
                 items_VSM_sparse.addVector(vector.single()[0])
                 items_id.append(item_id)
@@ -138,5 +138,5 @@ if __name__ == '__main__':
     user = "neo4j"
     password = "q1" # pippo1
     recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
-    recommender.compute_and_store_similarity();
+    recommender.compute_and_store_similarity()
     recommender.close()

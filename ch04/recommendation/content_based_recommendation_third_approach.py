@@ -12,7 +12,7 @@ class ContentBasedRecommender(object):
         movies_VSM = self.get_movie_vectors()
         i = 0
         for movie in movies_VSM:
-            knn = self.compute_knn(movie, movies_VSM.copy(), 10);
+            knn = self.compute_knn(movie, movies_VSM.copy(), 10)
             self.store_knn(movie, knn)
             # would be useful to add a progress bar here as well...
             i += 1
@@ -53,7 +53,7 @@ class ContentBasedRecommender(object):
 
             i = 0
             for movie in tx.run(list_of_moview_query):
-                movie_id = movie["movieId"];
+                movie_id = movie["movieId"]
                 vector = tx.run(query, {"movieId": movie_id})
                 movies_VSM[movie_id] = vector.single()[0]
                 i += 1
@@ -110,6 +110,6 @@ if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = ContentBasedRecommender(uri=uri, user="neo4j", password="pippo1")
     # would be nice to have a control of execution - like, recalculate everything only if specific flag is set, or something like
-    recommender.compute_and_store_similarity();
-    top10 = recommender.recommendTo("598", 10);
+    recommender.compute_and_store_similarity()
+    top10 = recommender.recommendTo("598", 10)
     print(top10)

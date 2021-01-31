@@ -143,7 +143,7 @@ class TextProcessor(object):
         spans = filter_extended_spans(spans)
         for item in spans:
             span = item['span']
-            lexme = self.nlp.vocab[span.text];
+            lexme = self.nlp.vocab[span.text]
             if lexme.is_stop or lexme.is_digit or lexme.is_bracket or "-PRON-" in span.lemma_:
                 continue
             keyword = {"id": span.lemma_, "start_index": span.start_char, "end_index": span.end_char}
@@ -246,7 +246,7 @@ class TextProcessor(object):
         results = []
         with self._driver.session() as session:
             for items in session.run(query, params):
-                item = items["result"];
+                item = items["result"]
                 results.append(item)
         return results
 
