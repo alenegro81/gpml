@@ -1,8 +1,6 @@
 from annoy import AnnoyIndex
 from neo4j import GraphDatabase
 import time
-import sys,os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
 from util.sparse_matrix import SparseMatrix
 from statistics import mean
 import gc
