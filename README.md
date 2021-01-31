@@ -31,6 +31,12 @@ Once created it needs to be activated
 source .venv/bin/activate
 ```
 
+You also need to set the `PYTHONPATH` environment variable, so Python will able to find auxiliary libraries (in the top-level directory of the project):
+
+```sh
+export PYTHONPATH="$(pwd):$PYTHONPATH"
+```
+
 The commands above run on Linux/Unix sheels for more details and for other operating systems refers to the Python documentation available [here](https://docs.python.org/3/library/venv.html).
  
 As reminder the environment must be activated everytime a new shel is opened. 

@@ -2,9 +2,6 @@ import numpy as np
 from neo4j import GraphDatabase
 import time
 
-import sys,os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..')))
-
 from util.sparse_matrix import SparseMatrix
 from util.lsh import LSH
 from statistics import mean

@@ -8,7 +8,7 @@ from collections import defaultdict
 from spacy.matcher import Matcher, DependencyMatcher
 
 import sys,os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
+
 from ch12.text_processors import TextProcessor
 from util.query_utils import executeNoException
 

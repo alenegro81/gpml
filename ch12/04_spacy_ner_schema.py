@@ -2,8 +2,6 @@ import spacy
 from neo4j import GraphDatabase
 from spacy.lang.en.stop_words import STOP_WORDS
 
-import sys,os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
 from ch12.text_processors import TextProcessor
 from util.query_utils import executeNoException
 

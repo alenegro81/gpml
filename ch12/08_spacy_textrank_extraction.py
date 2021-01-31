@@ -3,10 +3,8 @@ from neo4j import GraphDatabase
 import neuralcoref
 import pytextrank
 import pandas as pd
-import sys
-
 import sys,os
-sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..')))
+
 from util.query_utils import executeNoException
 from ch12.text_processors import TextProcessor
 
