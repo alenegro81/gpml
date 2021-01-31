@@ -1,20 +1,21 @@
 from enum import Enum
 from typing import Dict, List
 
-from neo4j import GraphDatabase, Transaction
+from neo4j import Transaction
 
 from util.fixed_heapq import FixedHeap
 from util.sparse_vector import cosine_similarity
+from util.graphdb_base import GraphDBBase
 
 
-class BaseRecommender(object):
+class BaseRecommender(GraphDBBase):
     label = None
     property = None
     sparse_vector_query = None
     score_query = None
 
-    def __init__(self, uri: str, user: str, password: str):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+    def __init__(self):
+        super().__init__(command=__file__)
 
     def compute_and_store_KNN(self, size: int) -> None:
         print("fetching vectors")
@@ -37,7 +38,7 @@ class BaseRecommender(object):
         print("KNN computation done")
 
     def get_vectors(self) -> Dict:
-        with self._driver.session() as session:
+        with self.get_session() as session:
             tx = session.begin_transaction()
             ids = self.get_elements(tx)
             vectors = {id_: self.get_sparse_vector(tx, id_) for id_ in ids}
@@ -140,16 +141,16 @@ class ItemRecommender(BaseRecommender):
     """
 
 
-class Recommender(object):
+class Recommender(GraphDBBase):
     class KNNType(Enum):
         USER = 1
         ITEM = 2
 
-    def __init__(self, uri: str, user: str, password: str):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+    def __init__(self):
+        super().__init__(command=__file__)
         self.strategies: Dict[Recommender.KNNType, BaseRecommender] = {
-            Recommender.KNNType.USER: UserRecommender(uri, user, password),
-            Recommender.KNNType.ITEM: ItemRecommender(uri, user, password)
+            Recommender.KNNType.USER: UserRecommender(),
+            Recommender.KNNType.ITEM: ItemRecommender()
         }
 
     def compute_and_store_KNN(self, type_: KNNType) -> None:
@@ -159,7 +160,7 @@ class Recommender(object):
     def clean_KNN(self):
         print("cleaning previus compude KNNs")
         delete_query = "MATCH p=()-[r:SIMILARITY]->() DELETE r"
-        with self._driver.session() as session:
+        with self.get_session() as session:
             tx = session.begin_transaction()
             tx.run(delete_query)
             tx.commit()
@@ -170,7 +171,7 @@ class Recommender(object):
 
 
 def main():
-    recommender = Recommender("bolt://localhost:7687", "neo4j", "q1")
+    recommender = Recommender()
     recommender.clean_KNN()
     recommender.compute_and_store_KNN(recommender.KNNType.USER)
     user_id = "121688"

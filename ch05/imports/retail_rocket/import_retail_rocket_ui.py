@@ -1,31 +1,25 @@
 import csv
 import time
-from neo4j import GraphDatabase
+import os
 import sys
 
 
-class RetailRocketImporter(object):
+from util.graphdb_base import GraphDBBase
+from util.string_util import strip
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
 
-    def close(self):
-        self._driver.close()
+class RetailRocketImporter(GraphDBBase):
 
-    def executeNoException(self, session, query):
-        try:
-            session.run(query)
-        except Exception as e:
-            pass
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def import_user_item(self, file):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
-                # this needs to be wrapped into 
-                self.executeNoException(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
-                self.executeNoException(session, "CREATE CONSTRAINT ON (u:Item) ASSERT u.itemId IS UNIQUE")
+                self.execute_without_exception("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+                self.execute_without_exception("CREATE CONSTRAINT ON (u:Item) ASSERT u.itemId IS UNIQUE")
 
                 tx = session.begin_transaction()
                 i = 0
@@ -58,18 +52,13 @@ class RetailRocketImporter(object):
                 print(j, "lines processed")
 
 
-def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
-
-
 if __name__ == '__main__':
     start = time.time()
-    uri = "bolt://localhost:7687"
-    user = "neo4j"
-    password = "q1"  # pippo1
-    file_path = "/Users/ale/neo4j-servers/gpml/dataset/retailrocket-recommender-system-dataset/events.csv"
-    if len(sys.argv) > 1:
-        file_path = sys.argv[1]
-    importing = RetailRocketImporter(uri=uri, user=user, password=password)
+    importing = RetailRocketImporter(argv=sys.argv[1:])
+    base_path = importing.source_dataset_path
+    if not base_path:
+        base_path = "/Users/ale/neo4j-servers/gpml/dataset/retailrocket-recommender-system-dataset/"
+    file_path = os.path.join(base_path, "events.csv")
     importing.import_user_item(file=file_path)
     end = time.time() - start
     print("Time to complete:", end)

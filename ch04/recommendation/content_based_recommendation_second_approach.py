@@ -1,23 +1,14 @@
-import site
-
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from neo4j import GraphDatabase
 import sys
-import getopt
+
+from util.graphdb_base import GraphDBBase
 
 
-try:
-    from util.main_paramters_parsing import get_main_parameters
-except Exception as e:
-    site.addsitedir("../../")
-    from util.main_paramters_parsing import get_main_parameters
-
-
-class ContentBasedRecommenderSecondApproach(object):
-
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+class ContentBasedRecommenderSecondApproach(GraphDBBase):
+    def __init__(self, argv, extended_options, extended_long_options):
+        super().__init__(command=__file__, argv=argv, extended_options=extended_options,
+                         extended_long_options=extended_long_options)
 
     def recommend_to(self, userId, k):
         user_VSM = self.get_user_vector(userId)
@@ -58,7 +49,7 @@ class ContentBasedRecommenderSecondApproach(object):
                 RETURN collect(value) as vector
             """
         user_VSM = None
-        with self._driver.session() as session:
+        with self.get_session() as session:
             tx = session.begin_transaction()
             vector = tx.run(query, {"userId": user_id})
             user_VSM = vector.single()[0]
@@ -87,7 +78,7 @@ class ContentBasedRecommenderSecondApproach(object):
         movies_VSM = {}
         titles = {}
 
-        with self._driver.session() as session:
+        with self.get_session() as session:
             tx = session.begin_transaction()
 
             i = 0
@@ -105,16 +96,9 @@ class ContentBasedRecommenderSecondApproach(object):
 
 
 if __name__ == '__main__':
-    neo4j_user, neo4j_password, base_path, uri, opts, args = get_main_parameters(__file__, sys.argv[1:], 't:', ['target_user='])
-    target_user = "598"
-    try:
-        for opt, arg in opts:
-            if opt in ("-t", "--target_user"):
-                target_user = arg
-    except getopt.GetoptError:
-        print(__file__ , "Specify the user with -t <user id>")
-        print("Setting the default to:", target_user)
-    recommender = ContentBasedRecommenderSecondApproach(uri=uri, user=neo4j_user, password=neo4j_password)
+    recommender = ContentBasedRecommenderSecondApproach(sys.argv[1:], 't:', ['target_user='])
+    target_user = recommender.get_option(["-t", "--target_user"], "598")
+
     top10 = recommender.recommend_to(target_user, 10) #Replace 598 with any other user id you are interested in
     print(top10)
 
