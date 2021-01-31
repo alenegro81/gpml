@@ -15,7 +15,7 @@ class SessionBasedRecommender(object):
     def compute_and_store_similarity(self):
         sessions_VSM = self.get_session_vectors()
         for session in sessions_VSM:
-            knn = self.compute_knn(session, sessions_VSM.copy(), 20);
+            knn = self.compute_knn(session, sessions_VSM.copy(), 20)
             self.store_knn(session, knn)
 
     def compute_knn(self, session, sessions, k):
@@ -47,7 +47,7 @@ class SessionBasedRecommender(object):
         with self._driver.session() as session:
             i = 0
             for result in session.run(list_of_sessions_query):
-                session_id = result["sessionId"];
+                session_id = result["sessionId"]
                 vector = session.run(query, {"sessionId": session_id})
                 sessions_VSM_sparse[session_id] = vector.single()[0]
                 i += 1
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     user = "neo4j"
     password = "q1" # pippo1
     recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
-    recommender.compute_and_store_similarity();
-    top10 = recommender.recommend_to(907, 10);
+    recommender.compute_and_store_similarity()
+    top10 = recommender.recommend_to(907, 10)
     recommender.close()
     print(top10)

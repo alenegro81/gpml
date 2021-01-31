@@ -1,2 +1,2 @@
-neo4j
+neo4j>=4.0,<4.3
 imdbpy

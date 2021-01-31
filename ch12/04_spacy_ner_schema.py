@@ -1,6 +1,5 @@
 import spacy
 from neo4j import GraphDatabase
-from spacy.lang.en.stop_words import STOP_WORDS
 
 from ch12.text_processors import TextProcessor
 from util.query_utils import executeNoException
@@ -8,7 +7,7 @@ from util.query_utils import executeNoException
 
 class GraphBasedNLP(object):
 
-    def __init__(self, language, uri, user, password):
+    def __init__(self, uri, user, password):
         spacy.prefer_gpu()
         self.nlp = spacy.load("en_core_web_sm")
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
@@ -35,7 +34,7 @@ class GraphBasedNLP(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
+    basic_nlp = GraphBasedNLP(uri=uri, user="neo4j", password="pippo1")
     basic_nlp.tokenize_and_store("President Barack Obama was born in Hawaii.  He was elected president in 2008.", 1,
                                  False)
     basic_nlp.close()

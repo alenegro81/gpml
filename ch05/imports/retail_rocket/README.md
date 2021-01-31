@@ -18,7 +18,7 @@ pip install -r requirements.txt
 ## Download & import the dataset
 
 
-For this chapter we're using the [Retailrocket recommender system dataset](https://www.kaggle.com/retailrocket/ecommerce-dataset?select=item_properties_part1.csv) available at Kaggle.  From this dataset we need only the `events.csv` file (you can download the whole dataset), download it and put it into some directory.
+For this chapter we're using the [Retailrocket recommender system dataset](https://www.kaggle.com/retailrocket/ecommerce-dataset) available from Kaggle.  From this dataset we need only the `events.csv` file (you can download the whole dataset), download it and put it into some directory.
 
 Importing of data is performed with following command (you may need to update Neo4j username & password in the file):
 

@@ -15,7 +15,7 @@ class ContextAwareRecommender(object):
         for context in contexts:
             items_VSM = self.get_item_vectors(context)
             for item in items_VSM:
-                knn = self.compute_knn(item, items_VSM.copy(), 20);
+                knn = self.compute_knn(item, items_VSM.copy(), 20)
                 self.store_knn(item, knn, context)
 
     def compute_knn(self, item, items, k):
@@ -65,7 +65,7 @@ class ContextAwareRecommender(object):
         with self._driver.session() as session:
             i = 0
             for item in session.run(list_of_items_query):
-                item_id = item["itemId"];
+                item_id = item["itemId"]
                 context_info["itemId"] = item_id
                 vector = session.run(query, context_info)
                 items_VSM_sparse[item_id] = vector.single()[0]
@@ -139,11 +139,10 @@ class ContextAwareRecommender(object):
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     recommender = ContextAwareRecommender(uri=uri, user="neo4j", password="pippo1")
-    contexts = []
-    contexts.append((1, {"location": "Home", "companion": "Alone", "time": "Weekday"}))
-    contexts.append((2, {"location": "Cinema", "companion": "Partner", "time": "Weekend"}))
-    contexts.append((3, {"location": "Cinema", "companion": "Partner"}))
-    recommender.compute_and_store_similarity(contexts);
-    top10 = recommender.recommend_to(214842060, 10);
+    contexts = [(1, {"location": "Home", "companion": "Alone", "time": "Weekday"}),
+                (2, {"location": "Cinema", "companion": "Partner", "time": "Weekend"}),
+                (3, {"location": "Cinema", "companion": "Partner"})]
+    recommender.compute_and_store_similarity(contexts)
+    top10 = recommender.recommend_to(214842060, 10)
     recommender.close()
     print(top10)

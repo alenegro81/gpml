@@ -204,7 +204,9 @@ class DePaulMovieImporter(object):
         except Exception as e:
             pass
 
-def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
+
+def strip(string):
+    return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
 
 
 if __name__ == '__main__':
@@ -212,7 +214,7 @@ if __name__ == '__main__':
     uri = "bolt://localhost:7687"
     importing = DePaulMovieImporter(uri=uri, user="neo4j", password="pippo1")
     base_path = "/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         base_path = sys.argv[1]
     importing.import_event_data(file=base_path + "/ratings.txt")
     importing.import_movie_details()

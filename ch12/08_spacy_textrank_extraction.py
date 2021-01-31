@@ -1,6 +1,5 @@
 import spacy
 from neo4j import GraphDatabase
-import neuralcoref
 import pytextrank
 import pandas as pd
 import sys,os
@@ -10,7 +9,7 @@ from ch12.text_processors import TextProcessor
 
 class GraphBasedNLP(object):
 
-    def __init__(self, language, uri, user, password):
+    def __init__(self, uri, user, password):
         spacy.prefer_gpu()
         self.nlp = spacy.load('en_core_web_sm')
         #coref = neuralcoref.NeuralCoref(self.nlp.vocab)
@@ -34,7 +33,7 @@ class GraphBasedNLP(object):
             executeNoException(session, "CREATE CONSTRAINT ON (l:Keyword) ASSERT (l.id) IS NODE KEY")
 
     def import_data(self, file):
-        j = 0;
+        j = 0
         for chunk in pd.read_csv(file,
                                  header=None,
                                  skiprows=1,
@@ -63,12 +62,12 @@ class GraphBasedNLP(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
-    basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
+    basic_nlp = GraphBasedNLP(uri=uri, user="neo4j", password="pippo1")
     # basic_nlp.tokenize_and_store("Marie Curie received the Nobel Prize in Physic in 1903. She became the first woman to win the prize and the first person — man or woman — to win the award twice.", 3,
     #                            False)
     #basic_nlp.tokenize_and_store("The Committee awarded the Nobel Prize in Physic to Marie Curie.", 5, False)
     base_path = "/Users/ale/neo4j-servers/gpml/dataset"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         base_path = sys.argv[1]
     basic_nlp.import_data(file=os.path.abspath(os.path.join(base_path, "wiki_movie_plots_deduped.csv")))
     basic_nlp.close()

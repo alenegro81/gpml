@@ -4,7 +4,6 @@ import threading
 from queue import Queue
 from neo4j import GraphDatabase
 import math
-import uuid
 import os.path
 import sys
 
@@ -23,7 +22,7 @@ class CreditCardTransactionImporter(object):
         self._driver.close()
 
     def import_transactions(self, directory):
-        j = 0;
+        j = 0
         transactions = pd.read_csv(os.path.join(directory, "creditcard.csv"))
         # Starting threads for parallel writing
         for k in range(50):
@@ -40,8 +39,8 @@ class CreditCardTransactionImporter(object):
                 'transactionDt': row['Time'],
                 'transactionAmt': row['Amount']}
             vector = self.normalize(row, ['Time', 'Class'])
-            transaction['vector'] = vector;
-            self._transactions.put(transaction);
+            transaction['vector'] = vector
+            self._transactions.put(transaction)
             # ADD ROW
             if j % 10000 == 0:
                 print(j, "lines processed")
@@ -100,7 +99,8 @@ class CreditCardTransactionImporter(object):
         except Exception as e:
             pass
 
-def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
+def strip(string):
+    return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
 
 
 if __name__ == '__main__':
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     start = time.time()
     base_path = "/Users/ale/neo4j-servers/gpml/dataset/creditcardfraud/"
-    if (len(sys.argv) > 1):
+    if len(sys.argv) > 1:
         base_path = sys.argv[1]
     importer.import_transactions(directory=base_path)
     print("Time to complete paysim ingestion:", time.time() - start)

@@ -2,7 +2,6 @@ import hnswlib
 import numpy as np
 from neo4j import GraphDatabase
 import time
-import sklearn
 from sklearn.neighbors import NearestNeighbors
 
 class DistanceBasedAnalysis(object):
@@ -64,7 +63,7 @@ class DistanceBasedAnalysis(object):
             i = 0
             for result in session.run(list_of_transaction_query):
                 transaction_id = result["transactionId"]
-                vector = result["vector"];
+                vector = result["vector"]
 
                 data.append(vector)
                 data_labels.append(transaction_id)
@@ -90,7 +89,7 @@ class DistanceBasedAnalysis(object):
             MERGE (transaction)-[:{} {{weight: $knn[otherSessionId]}}]->(other)
         """.format(label)
         with self._driver.session() as session:
-            i = 0;
+            i = 0
             for label in data_labels:
                 ann_labels_array = ann_labels[i]
                 ann_distances_array = ann_distances[i]
@@ -98,7 +97,7 @@ class DistanceBasedAnalysis(object):
                 knnMap = {}
                 j = 0
                 for ann_label in ann_labels_array:
-                    value = np.float(ann_distances_array[j]);
+                    value = np.float(ann_distances_array[j])
                     knnMap[str(ann_label)] = value
                     j += 1
                 tx = session.begin_transaction()
@@ -116,7 +115,7 @@ if __name__ == '__main__':
     #relationship_name_value = "DISTANT_FROM_EXACT"
     relationship_name_value = "DISTANT_FROM"
     analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="q1")
-    analyzer.compute_and_store_distances(25, False, distance_formula_value, relationship_name_value);
+    analyzer.compute_and_store_distances(25, False, distance_formula_value, relationship_name_value)
     # Uncomment this line to calculate exact NNs, but it will take a lot of time!
     # analyzer.compute_and_store_distances(25, True);
     analyzer.close()
