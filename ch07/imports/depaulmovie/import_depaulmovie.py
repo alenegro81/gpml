@@ -1,32 +1,32 @@
 import time
-from neo4j import GraphDatabase
 from imdb import IMDb
 from imdb._exceptions import IMDbParserError
 import csv
 from queue import Queue
 import threading
 import sys
+import os
+
+from util.graphdb_base import GraphDBBase
+from util.string_util import strip
 
 
-class DePaulMovieImporter(object):
+class DePaulMovieImporter(GraphDBBase):
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
         self._ia = IMDb(reraiseExceptions=True)
         self._movie_queue = Queue()
         self._writing_queue = Queue()
         self._print_lock = threading.Lock()
 
-    def close(self):
-        self._driver.close()
-
     def import_event_data(self, file):
-        with self._driver.session() as session:
-            self.executeNoException(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
-            self.executeNoException(session, "CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
-            self.executeNoException(session, "CREATE CONSTRAINT ON (t:Time) ASSERT t.value IS UNIQUE")
-            self.executeNoException(session, "CREATE CONSTRAINT ON (l:Location) ASSERT l.value IS UNIQUE")
-            self.executeNoException(session, "CREATE CONSTRAINT ON (c:Companion) ASSERT c.value IS UNIQUE")
+        with self.get_session() as session:
+            self.execute_without_exception("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (t:Time) ASSERT t.value IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (l:Location) ASSERT l.value IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (c:Companion) ASSERT c.value IS UNIQUE")
 
             j = 0
             with open(file, 'r+') as in_file:
@@ -57,7 +57,9 @@ class DePaulMovieImporter(object):
                             time = strip(row[3])
                             location = strip(row[4])
                             companion = strip(row[5])
-                            tx.run(query, {"userId": user_id, "time": time, "location": location, "companion": companion, "itemId": item_id, "rating": rating})
+                            tx.run(query,
+                                   {"userId": user_id, "time": time, "location": location, "companion": companion,
+                                    "itemId": item_id, "rating": rating})
                             i += 1
                             j += 1
                             if i == 1000:
@@ -107,7 +109,7 @@ class DePaulMovieImporter(object):
 
     def get_movie_info(self):
         while True:
-            imdb_id  = self._movie_queue.get()
+            imdb_id = self._movie_queue.get()
             with self._print_lock:
                 print("Getting info for row: ", imdb_id)
             # get a movie
@@ -156,10 +158,10 @@ class DePaulMovieImporter(object):
                     print("Writing movie exiting", self._writing_queue.empty())
                 self._writing_queue.task_done()
                 break
-            with self._driver.session() as session:
+            with self.get_session() as session:
                 try:
                     directors = []
-                    if 'directors' in  movie_info:
+                    if 'directors' in movie_info:
                         for director in movie_info['directors']:
                             if 'name' in director.data:
                                 directors.append(director['name'])
@@ -193,30 +195,20 @@ class DePaulMovieImporter(object):
                     title = ''
                     if 'title' in movie_info:
                         title = movie_info['title']
-                    session.run(query, {"movieId":movie_id, "directors": directors, "genres": genres, "actors": actors, "plot": plot, "writers": writers, "producers": producers, 'title': title})
+                    session.run(query, {"movieId": movie_id, "directors": directors, "genres": genres, "actors": actors,
+                                        "plot": plot, "writers": writers, "producers": producers, 'title': title})
                 except Exception as e:
                     print(movie_id, e)
             self._writing_queue.task_done()
 
-    def executeNoException(self, session, query):
-        try:
-            session.run(query)
-        except Exception as e:
-            pass
-
-
-def strip(string):
-    return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
-
 
 if __name__ == '__main__':
     start = time.time()
-    uri = "bolt://localhost:7687"
-    importing = DePaulMovieImporter(uri=uri, user="neo4j", password="pippo1")
-    base_path = "/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie"
-    if len(sys.argv) > 1:
-        base_path = sys.argv[1]
-    importing.import_event_data(file=base_path + "/ratings.txt")
+    importing = DePaulMovieImporter(sys.argv[1:])
+    base_path = importing.source_dataset_path
+    if not base_path:
+        base_path = "/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie"
+    importing.import_event_data(file=os.path.join(base_path, "ratings.txt"))
     importing.import_movie_details()
     end = time.time() - start
     importing.close()

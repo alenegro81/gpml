@@ -18,6 +18,8 @@ class GraphDBBase():
         self.neo4j_user = None
         self.neo4j_password = None
         self.source_dataset_path = None
+        self.opts = {}
+        self.args = []
 
         if argv:
             self.__get_main_parameters__(command=command, argv=argv, extended_options=extended_options,
@@ -39,11 +41,22 @@ class GraphDBBase():
                 return param_converters[key](value)
             return value
 
-        other_params = dict([(key, maybe_convert(key, value)) for key, value in neo4j_params.items() if key not in ignored_params])
+        other_params = dict([(key, maybe_convert(key, value)) for key, value in neo4j_params.items()
+                             if key not in ignored_params])
         # print(other_params)
 
         self._driver = GraphDatabase.driver(uri, auth=(user, password), **other_params)
         self._session = None
+
+    def get_opts(self):
+        return self.opts
+
+    def get_option(self, options: list, default = None):
+        for opt, arg in self.opts:
+            if opt in options:
+                return arg
+
+        return default
 
     def close(self):
         self._driver.close()
@@ -51,7 +64,7 @@ class GraphDBBase():
     def get_session(self):
         return self._driver.session()
 
-    def execute_without_exception(self, query):
+    def execute_without_exception(self, query: str):
         try:
             self.get_session().run(query)
         except Exception as e:
@@ -59,14 +72,14 @@ class GraphDBBase():
 
     def __get_main_parameters__(self, command, argv, extended_options='', extended_long_options=[]):
         try:
-            opts, args = getopt.getopt(argv, 'hu:p:s:b:' + extended_options,
+            self.opts, self.args = getopt.getopt(argv, 'hu:p:s:b:' + extended_options,
                                        ['help', 'neo4j-user=', 'neo4j-password=', 'source-path=',
                                         'bolt='] + extended_long_options)
         except getopt.GetoptError as e:
             print(e)
             print(command, help_message)
             sys.exit(2)
-        for opt, arg in opts:
+        for opt, arg in self.opts:
             if opt == '-h':
                 print(command, help_message)
                 sys.exit()

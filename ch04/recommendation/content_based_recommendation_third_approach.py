@@ -1,12 +1,12 @@
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from neo4j import GraphDatabase
+
+from util.graphdb_base import GraphDBBase
 
 
-class ContentBasedRecommender(object):
-
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+class ContentBasedRecommender(GraphDBBase):
+    def __init__(self):
+        super().__init__(command=__file__)
 
     def compute_and_store_similarity(self):
         movies_VSM = self.get_movie_vectors()
@@ -107,8 +107,7 @@ class ContentBasedRecommender(object):
         return top_movies
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    recommender = ContentBasedRecommender(uri=uri, user="neo4j", password="pippo1")
+    recommender = ContentBasedRecommender()
     # would be nice to have a control of execution - like, recalculate everything only if specific flag is set, or something like
     recommender.compute_and_store_similarity()
     top10 = recommender.recommendTo("598", 10)

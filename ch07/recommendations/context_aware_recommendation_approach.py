@@ -1,15 +1,11 @@
-from neo4j import GraphDatabase
-
 from util.sparse_vector import cosine_similarity
+from util.graphdb_base import GraphDBBase
 
 
-class ContextAwareRecommender(object):
+class ContextAwareRecommender(GraphDBBase):
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
-
-    def close(self):
-        self._driver.close()
+    def __init__(self):
+        super().__init__(command=__file__)
 
     def compute_and_store_similarity(self, contexts):
         for context in contexts:
@@ -62,7 +58,7 @@ class ContextAwareRecommender(object):
 
         query = match_query + where_query + return_query
         items_VSM_sparse = {}
-        with self._driver.session() as session:
+        with self.get_session() as session:
             i = 0
             for item in session.run(list_of_items_query):
                 item_id = item["itemId"]
@@ -127,7 +123,7 @@ class ContextAwareRecommender(object):
             ORDER BY score desc
             LIMIT %s
         """
-        with self._driver.session() as session:
+        with self.get_session() as session:
             tx = session.begin_transaction()
             for result in tx.run(query % (k), {"itemId": item_id}):
                 top_items.append((result["itemId"], result["score"]))
@@ -137,8 +133,7 @@ class ContextAwareRecommender(object):
 
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    recommender = ContextAwareRecommender(uri=uri, user="neo4j", password="pippo1")
+    recommender = ContextAwareRecommender()
     contexts = [(1, {"location": "Home", "companion": "Alone", "time": "Weekday"}),
                 (2, {"location": "Cinema", "companion": "Partner", "time": "Weekend"}),
                 (3, {"location": "Cinema", "companion": "Partner"})]
