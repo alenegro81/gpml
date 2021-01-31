@@ -1,11 +1,12 @@
-import heapq
 import itertools
 from enum import Enum
 from typing import Dict, List
 
 from neo4j import GraphDatabase, Transaction
 
-from ch05.recommendation.collaborative_filtering.fixed_heapq import FixedHeap
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..', '..')))
+from util.fixed_heapq import FixedHeap
 from util.sparse_vector import cosine_similarity
 
 
