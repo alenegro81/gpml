@@ -1,25 +1,16 @@
-import site
 import csv
 import time
-from neo4j import GraphDatabase
 from imdb import IMDb
 import sys
 import os
 
-try:
-    from util.neo4j_util import execute_without_exception
-    from util.string_util import strip
-    from util.main_paramters_parsing import get_main_parameters
-except Exception as e:
-    site.addsitedir("../../../")
-    from util.neo4j_util import execute_without_exception
-    from util.string_util import strip
-    from util.main_paramters_parsing import get_main_parameters
+from util.graphdb_base import GraphDBBase
+from util.string_util import strip
 
-class MoviesImporter(object):
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+class MoviesImporter(GraphDBBase):
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
         self._ia = IMDb()
 
     def close(self):
@@ -30,14 +21,14 @@ class MoviesImporter(object):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
-            with self._driver.session() as session:
-                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
-                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
+            with self.get_session() as session:
+                self.execute_without_exception("CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
+                self.execute_without_exception("CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
 
                 tx = session.begin_transaction()
 
-                i = 0;
-                j = 0;
+                i = 0
+                j = 0
                 for row in reader:
                     try:
                         if row:
@@ -72,11 +63,11 @@ class MoviesImporter(object):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
-            with self._driver.session() as session:
-                execute_without_exception(session, "CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE;")
+            with self.get_session() as session:
+                self.execute_without_exception("CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE;")
                 tx = session.begin_transaction()
-                i = 0;
-                j = 0;
+                i = 0
+                j = 0
                 for row in reader:
                     try:
                         if row:
@@ -142,11 +133,11 @@ class MoviesImporter(object):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
-            with self._driver.session() as session:
-                execute_without_exception(session, "CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
+            with self.get_session() as session:
+                self.execute_without_exception("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
 
                 tx = session.begin_transaction()
-                i = 0;
+                i = 0
                 for row in reader:
                     try:
                         if row:
@@ -171,19 +162,20 @@ class MoviesImporter(object):
 
 
 if __name__ == '__main__':
-    neo4j_user, neo4j_password, base_path, uri = get_main_parameters(__file__, sys.argv[1:])
+    importing = MoviesImporter(argv=sys.argv[1:])
+    base_path = importing.source_dataset_path
 
     if not base_path:
-        print("source path directory is mandatory. Setting it to defaul.")
+        print("source path directory is mandatory. Setting it to default.")
         base_path = "../../../dataset/movielens/ml-latest-small"
 
     if not os.path.isdir(base_path):
-        print(base_path, "It isn't a directory")
+        print(base_path, "isn't a directory")
         sys.exit(1)
 
-    movies_path = base_path + "/movies.csv"
-    links_path = base_path + "/links.csv"
-    ratings_path = base_path + "/ratings.csv"
+    movies_path = os.path.join(base_path, "movies.csv")
+    links_path = os.path.join(base_path, "links.csv")
+    ratings_path = os.path.join(base_path, "ratings.csv")
 
     if not os.path.isfile(movies_path):
         print(movies_path, "doesn't exist in ", base_path)
@@ -195,7 +187,6 @@ if __name__ == '__main__':
         print(ratings_path, "doesn't exist in ", base_path)
         sys.exit(1)
 
-    importing = MoviesImporter(uri=uri, user=neo4j_user, password=neo4j_password)
     start = time.time()
     importing.import_movies(file=movies_path)
     importing.import_movie_details(file=links_path)
