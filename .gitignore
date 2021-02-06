@@ -6,3 +6,7 @@
 /ch06/imports/yoochoose/dataset-README.txt
 ch06/imports/yoochoose/yoochoose-*.dat
 /ch06/imports/yoochoose/yoochoose-data.7z
+/dataset/
+/docker-compose/data/
+/docker-compose/logs/
+/docker-compose/plugins/

@@ -1,0 +1,22 @@
+version: '2'
+services:
+  neo4j:
+    image: neo4j:4.2
+    container_name: neo4j
+    environment:
+      NEO4J_AUTH: 'neo4j/password'
+      NEO4JLABS_PLUGINS: '["apoc", "graph-data-science"]'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 32g
+    volumes:
+      - ./data:/data:rw
+      - ./logs:/logs:rw
+      - ./import:/var/lib/neo4j/import:rw
+      - ./plugins:/plugins:rw
+    ports:
+      - 7474:7474
+      - 7473:7473
+      - 7687:7687
