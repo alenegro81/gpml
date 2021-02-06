@@ -1,36 +1,34 @@
 import spacy
-from neo4j import GraphDatabase
+import sys
 import neuralcoref
 
 from ch12.text_processors import TextProcessor
-from util.query_utils import executeNoException
+from util.graphdb_base import GraphDBBase
 
 
+class GraphBasedNLP(GraphDBBase):
 
-class GraphBasedNLP(object):
-
-    def __init__(self, language, uri, user, password):
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
         spacy.prefer_gpu()
         self.nlp = spacy.load('en_core_web_sm')
         coref = neuralcoref.NeuralCoref(self.nlp.vocab)
         self.nlp.add_pipe(coref, name='neuralcoref')
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
         self.__text_processor = TextProcessor(self.nlp, self._driver)
         self.create_constraints()
 
     def close(self):
-        self._driver.close()
+        self.close()
 
     def create_constraints(self):
-        with self._driver.session() as session:
-            executeNoException(session, "CREATE CONSTRAINT ON (u:Tag) ASSERT (u.id) IS NODE KEY")
-            executeNoException(session, "CREATE CONSTRAINT ON (i:TagOccurrence) ASSERT (i.id) IS NODE KEY")
-            executeNoException(session, "CREATE CONSTRAINT ON (t:Sentence) ASSERT (t.id) IS NODE KEY")
-            executeNoException(session, "CREATE CONSTRAINT ON (l:AnnotatedText) ASSERT (l.id) IS NODE KEY")
-            executeNoException(session, "CREATE CONSTRAINT ON (l:NamedEntity) ASSERT (l.id) IS NODE KEY")
-            executeNoException(session, "CREATE CONSTRAINT ON (l:Entity) ASSERT (l.type, l.id) IS NODE KEY")
-            executeNoException(session, "CREATE CONSTRAINT ON (l:Evidence) ASSERT (l.id) IS NODE KEY")
-            executeNoException(session, "CREATE CONSTRAINT ON (l:Relationship) ASSERT (l.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (u:Tag) ASSERT (u.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (i:TagOccurrence) ASSERT (i.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (t:Sentence) ASSERT (t.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (l:AnnotatedText) ASSERT (l.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (l:NamedEntity) ASSERT (l.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (l:Entity) ASSERT (l.type, l.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (l:Evidence) ASSERT (l.id) IS NODE KEY")
+        self.execute_without_exception("CREATE CONSTRAINT ON (l:Relationship) ASSERT (l.id) IS NODE KEY")
 
     def tokenize_and_store(self, text, text_id, storeTag):
         docs = self.nlp.pipe([text])
@@ -53,8 +51,7 @@ class GraphBasedNLP(object):
 
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    basic_nlp = GraphBasedNLP(language="en", uri=uri, user="neo4j", password="pippo1")
+    basic_nlp = GraphBasedNLP(sys.argv[1:])
     basic_nlp.tokenize_and_store(
         "Marie Curie received the Nobel Prize in Physics in 1903. "
         "She became the first woman to win the prize and the first person — man or woman — to win the award twice.",

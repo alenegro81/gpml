@@ -1,16 +1,18 @@
 import hnswlib
 import numpy as np
-from neo4j import GraphDatabase
+import sys
 import time
 from sklearn.neighbors import NearestNeighbors
 
-class DistanceBasedAnalysis(object):
+from util.graphdb_base import GraphDBBase
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+class DistanceBasedAnalysis(GraphDBBase):
+
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def close(self):
-        self._driver.close()
+        self.close()
 
     def compute_and_store_distances(self, k, exact):
         start = time.time()
@@ -99,7 +101,7 @@ class DistanceBasedAnalysis(object):
                 knnMap = {}
                 j = 0
                 for ann_label in ann_labels_array:
-                    value = np.float(ann_distances_array[j])
+                    value = float(ann_distances_array[j])
                     knnMap[str(ann_label)] = value
                     j += 1
                 tx = session.begin_transaction()
@@ -112,8 +114,7 @@ class DistanceBasedAnalysis(object):
 
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="q1")
+    analyzer = DistanceBasedAnalysis(sys.argv[1:])
     analyzer.compute_and_store_distances(25, False)
     # Uncomment this line to calculate exact NNs, but it will take a lot of time!
     # analyzer.compute_and_store_distances(25, True);

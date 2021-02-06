@@ -3,25 +3,22 @@ import numpy as np
 import sys
 import time
 import operator
-from neo4j import GraphDatabase
+import os
+
+from util.graphdb_base import GraphDBBase
+from util.string_util import strip
 
 
-class YoochooseImporter(object):
+class YoochooseImporter(GraphDBBase):
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def close(self):
         self._driver.close()
 
-    def executeNoException(self, session, query):
-        try:
-            session.run(query)
-        except Exception as e:
-            pass
-        
     def import_session_data(self, file):
-        dtype = {"sessionID": np.int64, "itemID": np.int64, "category": np.object}
+        dtype = {"sessionID": np.int64, "itemID": np.int64, "category": object}
         j = 0
         sess_clicks = {}
         for chunk in pd.read_csv(file,
@@ -100,7 +97,7 @@ class YoochooseImporter(object):
 
     def import_buys_data(self, file, sess_clicks):
         with self._driver.session() as session:
-            dtype = {"sessionID": np.int64, "itemID": np.int64, "price": np.float, "quantity": np.int}
+            dtype = {"sessionID": np.int64, "itemID": np.int64, "price": float, "quantity": int}
             i = 0
             j = 0
             query = """
@@ -177,24 +174,20 @@ class YoochooseImporter(object):
         return sess_clicks
 
 
-def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
-
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    user = "neo4j"
-    password = "q1" # pippo1
-    base_path = "/Users/ale/neo4j-servers/gpml/dataset/yoochoose-data"
-    if len(sys.argv) > 1:
-        base_path = sys.argv[1]
-    importer = YoochooseImporter(uri=uri, user=user, password=password)
+    start = time.time()
+    importer = YoochooseImporter(sys.argv[1:])
+    base_path = importer.source_dataset_path
+    if not base_path:
+        base_path = "../../../dataset/yoochoose"
 
     start = time.time()
-    sessions = importer.import_session_data(file=base_path + "/yoochoose-clicks.dat")
+    sessions = importer.import_session_data(file=os.path.join(base_path, "yoochoose-clicks.dat"))
     print("Time to complete sessions ingestion:", time.time() - start)
 
     intermediate = time.time()
-    importer.import_buys_data(file=base_path + "/yoochoose-buys.dat",
+    importer.import_buys_data(file=os.path.join(base_path, "yoochoose-buys.dat"),
                               sess_clicks=sessions)
     print("Time to complete buys ingestion:", time.time() - intermediate)
 

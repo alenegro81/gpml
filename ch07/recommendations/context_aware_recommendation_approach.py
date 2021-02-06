@@ -1,11 +1,12 @@
+import sys
 from util.sparse_vector import cosine_similarity
 from util.graphdb_base import GraphDBBase
 
 
 class ContextAwareRecommender(GraphDBBase):
 
-    def __init__(self):
-        super().__init__(command=__file__)
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def compute_and_store_similarity(self, contexts):
         for context in contexts:
@@ -133,7 +134,7 @@ class ContextAwareRecommender(GraphDBBase):
 
 
 if __name__ == '__main__':
-    recommender = ContextAwareRecommender()
+    recommender = ContextAwareRecommender(sys.argv[1:])
     contexts = [(1, {"location": "Home", "companion": "Alone", "time": "Weekday"}),
                 (2, {"location": "Cinema", "companion": "Partner", "time": "Weekend"}),
                 (3, {"location": "Cinema", "companion": "Partner"})]

@@ -17,12 +17,12 @@ class PaySimImporter(GraphDBBase):
     def import_paysim(self, file):
         dtype = {
             "step": np.int64,
-            "type": np.object,
+            "type": object,
             "amount": np.float32,
-            "nameOrig": np.object,
+            "nameOrig": object,
             "oldbalanceOrg": np.float32,
             "newbalanceOrig": np.float32,
-            "nameDest": np.object,
+            "nameDest": object,
             "oldbalanceDest": np.float32,
             "newbalanceDest": np.float32,
             "isFraud": np.int32,
@@ -85,10 +85,10 @@ class PaySimImporter(GraphDBBase):
         """
 
         with self._driver.session() as session:
-            session.run("CREATE CONSTRAINT ON (s:Entity) ASSERT s.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (s:Customer) ASSERT s.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (s:Merchant) ASSERT s.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT ON (s:Transaction) ASSERT s.id IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (s:Entity) ASSERT s.id IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (s:Customer) ASSERT s.id IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (s:Merchant) ASSERT s.id IS UNIQUE")
+            self.execute_without_exception("CREATE CONSTRAINT ON (s:Transaction) ASSERT s.id IS UNIQUE")
             tx = session.begin_transaction()
             j = 0
             i = 0
