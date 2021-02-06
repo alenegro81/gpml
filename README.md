@@ -112,6 +112,17 @@ You can find all the instruction for downloading and installing Neo4j in the way
 * https://neo4j.com/download/
 * https://neo4j.com/docs/
 
+## Using Docker Compose
+
+You can get completely working setup in the matter of seconds by using the Docker & [docker-compose](https://docs.docker.com/compose/).  After it's installed, change to the `docker-compose` folder, and execute (add `-d` if you want to start it in background):
+
+```sh
+docker-compose up
+```
+
+this will bring you fully functional Neo4j setup, with all plugins installed.  After that you can point browser to the http://localhost:7474 and login into Neo4j browser using the name `neo4j` and password: `password`.
+
+
 # Useful tricks when working with Neo4j
 
 Sometimes you may need to completely cleanup database.  You can do it using the functions available in the [APOC library](https://neo4j.com/developer/neo4j-apoc/) that you can install into your database (via UI, or other way): 
