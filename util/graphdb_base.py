@@ -70,6 +70,12 @@ class GraphDBBase():
         except Exception as e:
             pass
 
+    def executeNoException(self, session, query: str):
+        try:
+            session.run(query)
+        except Exception as e:
+            pass
+
     def __get_main_parameters__(self, command, argv, extended_options='', extended_long_options=[]):
         try:
             self.opts, self.args = getopt.getopt(argv, 'hu:p:s:b:' + extended_options,

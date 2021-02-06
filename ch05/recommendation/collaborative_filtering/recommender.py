@@ -38,7 +38,7 @@ class BaseRecommender(GraphDBBase):
         print("KNN computation done")
 
     def get_vectors(self) -> Dict:
-        with self.get_session() as session:
+        with self._driver.session() as session:
             tx = session.begin_transaction()
             ids = self.get_elements(tx)
             vectors = {id_: self.get_sparse_vector(tx, id_) for id_ in ids}
@@ -158,9 +158,9 @@ class Recommender(GraphDBBase):
         strategy.compute_and_store_KNN(20)
 
     def clean_KNN(self):
-        print("cleaning previus compude KNNs")
+        print("cleaning previously computed KNNs")
         delete_query = "MATCH p=()-[r:SIMILARITY]->() DELETE r"
-        with self.get_session() as session:
+        with self._driver.session() as session:
             tx = session.begin_transaction()
             tx.run(delete_query)
             tx.commit()
@@ -171,6 +171,7 @@ class Recommender(GraphDBBase):
 
 
 def main():
+    # TODO: pass the user ID in the command-line
     recommender = Recommender()
     recommender.clean_KNN()
     recommender.compute_and_store_KNN(recommender.KNNType.USER)

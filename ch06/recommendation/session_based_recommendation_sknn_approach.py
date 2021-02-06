@@ -13,7 +13,7 @@ class SessionBasedRecommender(object):
         self._driver.close()
 
     def compute_and_store_similarity(self):
-        sessions_VSM = self.get_session_vectors()
+        sessions_VSM = self._driver.session_vectors()
         for session in sessions_VSM:
             knn = self.compute_knn(session, sessions_VSM.copy(), 20)
             self.store_knn(session, knn)

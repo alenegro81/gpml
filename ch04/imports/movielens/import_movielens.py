@@ -21,7 +21,7 @@ class MoviesImporter(GraphDBBase):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
-            with self.get_session() as session:
+            with self._driver.session() as session:
                 self.execute_without_exception("CREATE CONSTRAINT ON (a:Movie) ASSERT a.movieId IS UNIQUE; ")
                 self.execute_without_exception("CREATE CONSTRAINT ON (a:Genre) ASSERT a.genre IS UNIQUE; ")
 
@@ -63,7 +63,7 @@ class MoviesImporter(GraphDBBase):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
-            with self.get_session() as session:
+            with self._driver.session() as session:
                 self.execute_without_exception("CREATE CONSTRAINT ON (a:Person) ASSERT a.name IS UNIQUE;")
                 tx = session.begin_transaction()
                 i = 0
@@ -133,7 +133,7 @@ class MoviesImporter(GraphDBBase):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
-            with self.get_session() as session:
+            with self._driver.session() as session:
                 self.execute_without_exception("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
 
                 tx = session.begin_transaction()

@@ -20,7 +20,7 @@ class SessionBasedRecommender(object):
 
     def compute_and_store_similarity(self):
         start = time.time()
-        sessions_VSM, sessions_id = self.get_session_vectors()
+        sessions_VSM, sessions_id = self._driver.session_vectors()
         print("Time to create the vector:", time.time() - start)
         t = AnnoyIndex(sessions_VSM.shape[1], 'angular')
         t.on_disk_build('/tmp/test.ann')
