@@ -122,7 +122,7 @@ class UserRecommender(BaseRecommender):
         WITH otherUser, count(otherUser) as size
         MATCH (otherUser)-[r:PURCHASES]->(target:Target)
         WHERE target.itemId = $itemId
-        return (1.0f/size)*count(r) as score
+        return (+1.0/size)*count(r) as score
     """
 
 

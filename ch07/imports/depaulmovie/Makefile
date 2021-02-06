@@ -5,4 +5,5 @@ test:
 	nosetests tests
 
 download:
-	curl -L -o ratings.txt https://raw.githubusercontent.com/JDonini/depaulmovie-recommender-system/master/dataset/Movie_DePaulMovie/ratings.txt
+	mkdir -p ../../../dataset/deeppaulmovie && \
+	curl -L -o ../../../dataset/deeppaulmovie/ratings.txt https://raw.githubusercontent.com/JDonini/depaulmovie-recommender-system/master/dataset/Movie_DePaulMovie/ratings.txt

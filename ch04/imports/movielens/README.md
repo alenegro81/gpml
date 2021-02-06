@@ -8,12 +8,12 @@ To install what is necessary run:
 make
 ```
 
-## Download the data source
+## Download the source data
 The Makefile contains also the command to download the necessary data sources.
 Run:
 
 ```sh
-make source
+make download
 ```
 
 You can also download it manually from [project's site](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip)
@@ -28,7 +28,7 @@ The default location is in the home of this code repository in the directory dat
 python import_movielens.py -u <neo4j username> -p <password>  -b <bolt uri> -s <source directory>
 ```
  
-If you used the makefile for downloading the directory you don't need to specify the datasource. 
+If you used the makefile for downloading the directory you don't need to specify the datasource.  If you specified username, password & bolt URI in the config file, then you don't need to specify these parameters.
 The simple version takes a while to be completed. I recommend to run the parallel version as follows:
 
 ```sh

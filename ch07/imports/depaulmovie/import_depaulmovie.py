@@ -207,7 +207,7 @@ if __name__ == '__main__':
     importing = DePaulMovieImporter(sys.argv[1:])
     base_path = importing.source_dataset_path
     if not base_path:
-        base_path = "/Users/ale/neo4j-servers/gpml/dataset/Movie_DePaulMovie"
+        base_path = "../../../dataset/deeppaulmovie"
     importing.import_event_data(file=os.path.join(base_path, "ratings.txt"))
     importing.import_movie_details()
     end = time.time() - start
