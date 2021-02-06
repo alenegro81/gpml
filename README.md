@@ -105,7 +105,7 @@ If you encounter problems in running some of the examples you can decide to eith
 
 All the scripts work perfectly with the community and the enterprise edition of Neo4j. 
 Moreover, it is possible to use the [Neo4j desktop](https://neo4j.com/download/) to manage the Neo4j instances. 
-The book has been written during the transition from 3.5.x to 4.x so the code has been all updated to run on the version 4.x.
+The book has been written during the transition from 3.5.x to 4.x so the code has been all updated to run on the version 4.x (all code was tested on 4.2.3).
 It introduced some changes, like the variable binding and the multi relationships syntax in Cypher that make the code incompatible with the previous version 3.5.x. 
 
 You can find all the instruction for downloading and installing Neo4j in the way you prefer here:

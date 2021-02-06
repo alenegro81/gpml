@@ -1,16 +1,18 @@
 import pandas as pd
 import numpy as np
 import time
-from neo4j import GraphDatabase
 import sys
+import os
 
-class PaySimImporter(object):
+from util.graphdb_base import GraphDBBase
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+class PaySimImporter(GraphDBBase):
+
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def close(self):
-        self._driver.close()
+        self.close()
 
     def import_paysim(self, file):
         dtype = {
@@ -144,19 +146,16 @@ class PaySimImporter(object):
         return sess_clicks
 
 
-def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
-
-
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    importer = PaySimImporter(uri=uri, user="neo4j", password="q1")
+    importer = PaySimImporter(sys.argv[1:])
 
     start = time.time()
-    file_path = "/Users/ale/neo4j-servers/gpml/dataset/paysim/PS_20174392719_1491204439457_log.csv"
-    if len(sys.argv) > 1:
-        file_path = sys.argv[1]
-    importer.import_paysim(file=file_path)
-    print("Time to complete paysim ingestion:", time.time() - start)
+    base_path = importer.source_dataset_path
+    if not base_path:
+        base_path = "../../../dataset/paysim"
+
+    importer.import_paysim(file=os.path.join(base_path, "PS_20174392719_1491204439457_log.csv"))
+    print("Time to complete PaySim ingestion:", time.time() - start)
 
     # intermediate = time.time()
     # importer.post_processing(sess_clicks=sessions)

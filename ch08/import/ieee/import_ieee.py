@@ -2,24 +2,25 @@ import pandas as pd
 import time
 import threading
 from queue import Queue
-from neo4j import GraphDatabase
 import math
 import sys
 
-class IEEEImporter(object):
+from util.graphdb_base import GraphDBBase
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+class IEEEImporter(GraphDBBase):
+
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
         self._transactions = Queue()
         self._dictionaries = {}
         self._print_lock = threading.Lock()
         with self._driver.session() as session:
-            self.executeNoException(session, "CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
-            self.executeNoException(session, "CREATE INDEX ON :Transaction(isFraud)")
-            self.executeNoException(session, "CREATE INDEX ON :Transaction(isTrain)")
+            self.execute_without_exception("CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
+            self.execute_without_exception("CREATE INDEX ON :Transaction(isFraud)")
+            self.execute_without_exception("CREATE INDEX ON :Transaction(isTrain)")
             
     def close(self):
-        self._driver.close()
+        self.close()
 
     def import_transaction(self, directory):
         j = 0
@@ -113,26 +114,16 @@ class IEEEImporter(object):
                     print(e, row)
             self._transactions.task_done()
 
-    def executeNoException(self, session, query):
-        try:
-            session.run(query)
-        except Exception as e:
-            pass
-
-
-def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
-
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    importer = IEEEImporter(uri=uri, user="neo4j", password="q1")
+    importer = IEEEImporter(sys.argv[1:])
 
     start = time.time()
-    base_path = "/Users/ale/neo4j-servers/gpml/dataset/ieee/"
-    if len(sys.argv) > 1:
-        base_path = sys.argv[1]
+    base_path = importer.source_dataset_path
+    if not base_path:
+        base_path = "../../../dataset/ieee"
     importer.import_transaction(directory=base_path)
-    print("Time to complete paysim ingestion:", time.time() - start)
+    print("Time to complete IEEE ingestion:", time.time() - start)
 
     # intermediate = time.time()
     # importer.post_processing(sess_clicks=sessions)
