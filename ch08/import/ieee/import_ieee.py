@@ -4,8 +4,11 @@ import threading
 from queue import Queue
 import math
 import sys
+import os
 
 from util.graphdb_base import GraphDBBase
+
+num_threads = 20
 
 class IEEEImporter(GraphDBBase):
 
@@ -22,29 +25,29 @@ class IEEEImporter(GraphDBBase):
     def close(self):
         self.close()
 
-    def import_transaction(self, directory):
+    def import_transaction(self, base_path):
         j = 0
 
-        train_transactions = pd.read_csv(directory + "train_transaction.csv")
+        train_transactions = pd.read_csv(os.path.join(base_path, "train_transaction.csv"))
         train_transactions.set_index("TransactionID", inplace=True, drop = False)
         train_transactions.insert(1, 'train', 1)
-        train_identity = pd.read_csv(directory + "train_identity.csv")
+        train_identity = pd.read_csv(os.path.join(base_path, "train_identity.csv"))
         train_identity.set_index("TransactionID", inplace=True)
 
         train = train_transactions.join(train_identity, how='left')
 
-        test_transactions = pd.read_csv(directory + "test_transaction.csv")
+        test_transactions = pd.read_csv(os.path.join(base_path, "test_transaction.csv"))
         test_transactions.set_index("TransactionID", inplace=True, drop = False)
         test_transactions.insert(1, 'train', 0)
 
-        test_identity = pd.read_csv(directory + "test_identity.csv")
+        test_identity = pd.read_csv(os.path.join(base_path, "test_identity.csv"))
         test_identity.set_index("TransactionID", inplace=True)
         test = test_transactions.join(test_identity, how='left')
 
         transactions = pd.concat([train, test])
 
         # Starting threads for parallel writing
-        for k in range(50):
+        for k in range(num_threads):
             print("starting thread: ", k)
             writing_thread = threading.Thread(target = self.write_transaction)
             writing_thread.daemon = True
@@ -122,7 +125,7 @@ if __name__ == '__main__':
     base_path = importer.source_dataset_path
     if not base_path:
         base_path = "../../../dataset/ieee"
-    importer.import_transaction(directory=base_path)
+    importer.import_transaction(base_path)
     print("Time to complete IEEE ingestion:", time.time() - start)
 
     # intermediate = time.time()

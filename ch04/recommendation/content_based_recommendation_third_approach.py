@@ -1,12 +1,14 @@
 import numpy as np
+import sys
 from sklearn.metrics.pairwise import cosine_similarity
 
 from util.graphdb_base import GraphDBBase
 
 
 class ContentBasedRecommender(GraphDBBase):
-    def __init__(self):
-        super().__init__(command=__file__)
+
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def compute_and_store_similarity(self):
         movies_VSM = self.get_movie_vectors()
@@ -107,7 +109,7 @@ class ContentBasedRecommender(GraphDBBase):
         return top_movies
 
 if __name__ == '__main__':
-    recommender = ContentBasedRecommender()
+    recommender = ContentBasedRecommender(sys.argv[1:])
     # would be nice to have a control of execution - like, recalculate everything only if specific flag is set, or something like
     recommender.compute_and_store_similarity()
     top10 = recommender.recommendTo("598", 10)

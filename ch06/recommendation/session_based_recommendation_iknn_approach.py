@@ -1,16 +1,16 @@
 import numpy as np
-from neo4j import GraphDatabase
+import sys
 
 from util.sparse_vector import cosine_similarity
+from util.graphdb_base import GraphDBBase
 
+class SessionBasedRecommender(GraphDBBase):
 
-class SessionBasedRecommender(object):
-
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def close(self):
-        self._driver.close()
+        self.close()
 
     def compute_and_store_similarity(self):
         items_VSM = self.get_item_vectors()
@@ -96,10 +96,7 @@ class SessionBasedRecommender(object):
         return top_items
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    user = "neo4j"
-    password = "q1" # pippo1
-    recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
+    recommender = SessionBasedRecommender(sys.argv[1:])
     recommender.compute_and_store_similarity()
     top10 = recommender.recommend_to(214842060, 10)
     recommender.close()

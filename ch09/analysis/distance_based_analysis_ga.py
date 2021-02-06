@@ -1,18 +1,21 @@
 import hnswlib
 import pandas as pd
 import numpy as np
-from neo4j import GraphDatabase
+import sys
 import time
 from random import randrange
 from random import shuffle
 
-class DistanceBasedAnalysis(object):
+from util.graphdb_base import GraphDBBase
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+
+class DistanceBasedAnalysis(GraphDBBase):
+
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def close(self):
-        self._driver.close()
+        self.close()
 
     def feature_selection(self, num_generations, sol_per_pop, num_parents_mating, newly_generated_elements, threshold):
         start = time.time()
@@ -147,8 +150,10 @@ class DistanceBasedAnalysis(object):
 def compute_fitness(labels, distances):
     return np.sum(distances)
 
+
 def compute_average_value(labels, distances):
     return np.average(distances)
+
 
 def select_mating_pool(fitnesses, num_parents):
     return sorted(fitnesses, key=lambda item: item[1]/item[2], reverse=True)[0:num_parents]
@@ -179,6 +184,7 @@ def crossover(parents, offspring_size):
         offspring[k, crossover_point:] = parents[parent2_idx][crossover_point:]
     return offspring
 
+
 def mutation(offspring_crossover):
     # Mutation changes a single gene in each offspring randomly.
     for idx in range(offspring_crossover.shape[0]):
@@ -190,9 +196,9 @@ def mutation(offspring_crossover):
             offspring_crossover[idx, gene_index] = gene
     return offspring_crossover
 
+
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="q1")
+    analyzer = DistanceBasedAnalysis(sys.argv[1:])
     analyzer.feature_selection(num_generations = 40, sol_per_pop = 34, num_parents_mating = 12,
-                               newly_generated_elements = 6, threshold=0.1);
+                               newly_generated_elements = 6, threshold=0.1)
     analyzer.close()

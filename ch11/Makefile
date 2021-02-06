@@ -5,5 +5,6 @@ test:
 	nosetests tests
 
 download:
-	if [ ! -f masc_word_sense_sentence_corpus.V1.0.tar.gz ]; then curl -L -o 'masc_word_sense_sentence_corpus.V1.0.tar.gz' 'http://academiccommons.columbia.edu/download/fedora_content/download/ac:175064/CONTENT/masc_word_sense_sentence_corpus.V1.0.tar.gz'; fi
-	if [ -f masc_word_sense_sentence_corpus.V1.0.tar.gz ] && [ ! -d masc_word_sense_sentence_corpus.V1.0 ]; then tar zxf masc_word_sense_sentence_corpus.V1.0.tar.gz; fi
+	mkdir -p ../dataset/masc/
+	if [ ! -f ../dataset/masc/masc_word_sense_sentence_corpus.V1.0.tar.gz ]; then curl -L -o '../dataset/masc/masc_word_sense_sentence_corpus.V1.0.tar.gz' 'http://academiccommons.columbia.edu/download/fedora_content/download/ac:175064/CONTENT/masc_word_sense_sentence_corpus.V1.0.tar.gz'; fi
+	if [ -f ../dataset/masc/masc_word_sense_sentence_corpus.V1.0.tar.gz ] && [ ! -d masc_word_sense_sentence_corpus.V1.0 ]; then cd ../dataset/masc/; tar zxf masc_word_sense_sentence_corpus.V1.0.tar.gz; cd -; fi

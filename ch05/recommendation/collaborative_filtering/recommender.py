@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Dict, List
-
+import sys
 from neo4j import Transaction
 
 from util.fixed_heapq import FixedHeap
@@ -14,8 +14,8 @@ class BaseRecommender(GraphDBBase):
     sparse_vector_query = None
     score_query = None
 
-    def __init__(self):
-        super().__init__(command=__file__)
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
 
     def compute_and_store_KNN(self, size: int) -> None:
         print("fetching vectors")
@@ -146,8 +146,8 @@ class Recommender(GraphDBBase):
         USER = 1
         ITEM = 2
 
-    def __init__(self):
-        super().__init__(command=__file__)
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
         self.strategies: Dict[Recommender.KNNType, BaseRecommender] = {
             Recommender.KNNType.USER: UserRecommender(),
             Recommender.KNNType.ITEM: ItemRecommender()
@@ -172,7 +172,7 @@ class Recommender(GraphDBBase):
 
 def main():
     # TODO: pass the user ID in the command-line
-    recommender = Recommender()
+    recommender = Recommender(sys.argv[1:])
     recommender.clean_KNN()
     recommender.compute_and_store_KNN(recommender.KNNType.USER)
     user_id = "121688"

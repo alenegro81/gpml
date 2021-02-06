@@ -2,30 +2,33 @@ import pandas as pd
 import time
 import threading
 from queue import Queue
-from neo4j import GraphDatabase
 import math
 import os.path
 import sys
 
-class CreditCardTransactionImporter(object):
+from util.graphdb_base import GraphDBBase
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+num_threads = 20
+
+class CreditCardTransactionImporter(GraphDBBase):
+
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
         self._transactions = Queue()
         self._dictionaries = {}
         self._print_lock = threading.Lock()
         with self._driver.session() as session:
-            self.executeNoException(session, "CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
-            self.executeNoException(session, "CREATE INDEX ON :Transaction(isFraud)")
-            
+            self.execute_without_exception("CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
+            self.execute_without_exception("CREATE INDEX ON :Transaction(isFraud)")
+
     def close(self):
-        self._driver.close()
+        self.close()
 
     def import_transactions(self, directory):
         j = 0
         transactions = pd.read_csv(os.path.join(directory, "creditcard.csv"))
         # Starting threads for parallel writing
-        for k in range(50):
+        for k in range(num_threads):
             print("starting thread: ", k)
             writing_thread = threading.Thread(target = self.write_transaction)
             writing_thread.daemon = True
@@ -93,24 +96,15 @@ class CreditCardTransactionImporter(object):
                     print(e, row)
             self._transactions.task_done()
 
-    def executeNoException(self, session, query):
-        try:
-            session.run(query)
-        except Exception as e:
-            pass
-
-def strip(string):
-    return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])
-
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    importer = CreditCardTransactionImporter(uri=uri, user="neo4j", password="q1")
+    importer = CreditCardTransactionImporter(sys.argv[1:])
 
     start = time.time()
-    base_path = "/Users/ale/neo4j-servers/gpml/dataset/creditcardfraud/"
-    if len(sys.argv) > 1:
-        base_path = sys.argv[1]
+    base_path = importer.source_dataset_path
+    if not base_path:
+        base_path = "../../../dataset/creditcard"
+
     importer.import_transactions(directory=base_path)
     print("Time to complete paysim ingestion:", time.time() - start)
 

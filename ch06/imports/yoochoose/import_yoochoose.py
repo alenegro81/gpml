@@ -17,7 +17,7 @@ class YoochooseImporter(GraphDBBase):
         with self._driver.session() as session:
             self.execute_without_exception("CREATE CONSTRAINT ON (s:Session) ASSERT s.sessionId IS UNIQUE")
             self.execute_without_exception("CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
-            dtype = {"sessionID": np.int64, "itemID": np.int64, "category": np.object}
+            dtype = {"sessionID": np.int64, "itemID": np.int64, "category": object}
             j = 0
             for chunk in pd.read_csv(file,
                                      header=0,
@@ -62,7 +62,7 @@ class YoochooseImporter(GraphDBBase):
 
     def import_buys_data(self, file):
         with self._driver.session() as session:
-            dtype = {"sessionID": np.int64, "itemID": np.int64, "price": np.float, "quantity": np.int}
+            dtype = {"sessionID": np.int64, "itemID": np.int64, "price": float, "quantity": int}
             j = 0
             for chunk in pd.read_csv(file,
                                      header=0,
@@ -103,11 +103,11 @@ class YoochooseImporter(GraphDBBase):
 
 if __name__ == '__main__':
     start = time.time()
-    importing = YoochooseImporter(sys.argv[1:])
-    base_path = importing.source_dataset_path
+    importer = YoochooseImporter(sys.argv[1:])
+    base_path = importer.source_dataset_path
     if not base_path:
-        base_path = "/Users/ale/neo4j-servers/gpml/dataset/yoochoose-data"
-    importing.import_session_data(file=os.path.join(base_path, "yoochoose-clicks.dat"))
-    importing.import_buys_data(file=os.path.join(base_path, "yoochoose-buys.dat"))
+        base_path = "../../../dataset/yoochoose"
+    importer.import_session_data(file=os.path.join(base_path, "yoochoose-clicks.dat"))
+    importer.import_buys_data(file=os.path.join(base_path, "yoochoose-buys.dat"))
     end = time.time() - start
     print("Time to complete:", end)

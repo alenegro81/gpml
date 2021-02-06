@@ -1,23 +1,23 @@
-import numpy as np
-from neo4j import GraphDatabase
 import time
+import sys
 
 from util.sparse_matrix import SparseMatrix
 from util.lsh import LSH
 from statistics import mean
 
+from util.graphdb_base import GraphDBBase
 
-class SessionBasedRecommender(object):
+class SessionBasedRecommender(GraphDBBase):
 
-    def __init__(self, uri, user, password):
-        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=0)
+    def __init__(self, argv):
+        super().__init__(command=__file__, argv=argv)
         self.__time_to_query = []
         self.__time_to_knn = []
         self.__time_to_sort = []
         self.__time_to_store = []
 
     def close(self):
-        self._driver.close()
+        self.close()
 
     # https: // github.com / brandonrobertz / SparseLSH
     def compute_and_store_similarity(self):
@@ -134,9 +134,6 @@ class SessionBasedRecommender(object):
             tx.commit()
 
 if __name__ == '__main__':
-    uri = "bolt://localhost:7687"
-    user = "neo4j"
-    password = "q1" # pippo1
-    recommender = SessionBasedRecommender(uri=uri, user=user, password=password)
+    recommender = SessionBasedRecommender(sys.argv[1:])
     recommender.compute_and_store_similarity()
     recommender.close()

@@ -1,5 +1,6 @@
 import stanfordnlp
 
+
 class BasicNLP(object):
 
     def __init__(self, language):
@@ -15,6 +16,7 @@ class BasicNLP(object):
             i += 1
             for token in sentence.tokens:
                 print(token.index, "-", token.text, "-", token.words[0].lemma)
+
 
 if __name__ == '__main__':
     basic_nlp = BasicNLP(language="en")
