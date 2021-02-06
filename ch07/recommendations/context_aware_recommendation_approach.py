@@ -58,7 +58,7 @@ class ContextAwareRecommender(GraphDBBase):
 
         query = match_query + where_query + return_query
         items_VSM_sparse = {}
-        with self.get_session() as session:
+        with self._driver.session() as session:
             i = 0
             for item in session.run(list_of_items_query):
                 item_id = item["itemId"]
@@ -123,7 +123,7 @@ class ContextAwareRecommender(GraphDBBase):
             ORDER BY score desc
             LIMIT %s
         """
-        with self.get_session() as session:
+        with self._driver.session() as session:
             tx = session.begin_transaction()
             for result in tx.run(query % (k), {"itemId": item_id}):
                 top_items.append((result["itemId"], result["score"]))

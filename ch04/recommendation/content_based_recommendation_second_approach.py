@@ -49,7 +49,7 @@ class ContentBasedRecommenderSecondApproach(GraphDBBase):
                 RETURN collect(value) as vector
             """
         user_VSM = None
-        with self.get_session() as session:
+        with self._driver.session() as session:
             tx = session.begin_transaction()
             vector = tx.run(query, {"userId": user_id})
             user_VSM = vector.single()[0]
@@ -78,7 +78,7 @@ class ContentBasedRecommenderSecondApproach(GraphDBBase):
         movies_VSM = {}
         titles = {}
 
-        with self.get_session() as session:
+        with self._driver.session() as session:
             tx = session.begin_transaction()
 
             i = 0

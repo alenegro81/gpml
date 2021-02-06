@@ -21,7 +21,7 @@ class DePaulMovieImporter(GraphDBBase):
         self._print_lock = threading.Lock()
 
     def import_event_data(self, file):
-        with self.get_session() as session:
+        with self._driver.session() as session:
             self.execute_without_exception("CREATE CONSTRAINT ON (u:User) ASSERT u.userId IS UNIQUE")
             self.execute_without_exception("CREATE CONSTRAINT ON (i:Item) ASSERT i.itemId IS UNIQUE")
             self.execute_without_exception("CREATE CONSTRAINT ON (t:Time) ASSERT t.value IS UNIQUE")
@@ -158,7 +158,7 @@ class DePaulMovieImporter(GraphDBBase):
                     print("Writing movie exiting", self._writing_queue.empty())
                 self._writing_queue.task_done()
                 break
-            with self.get_session() as session:
+            with self._driver.session() as session:
                 try:
                     directors = []
                     if 'directors' in movie_info:
