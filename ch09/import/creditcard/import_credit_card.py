@@ -8,7 +8,7 @@ import sys
 
 from util.graphdb_base import GraphDBBase
 
-num_threads = 20
+num_threads = 5
 
 class CreditCardTransactionImporter(GraphDBBase):
 
@@ -20,9 +20,6 @@ class CreditCardTransactionImporter(GraphDBBase):
         with self._driver.session() as session:
             self.execute_without_exception("CREATE CONSTRAINT ON (s:Transaction) ASSERT s.transactionId IS UNIQUE")
             self.execute_without_exception("CREATE INDEX ON :Transaction(isFraud)")
-
-    def close(self):
-        self.close()
 
     def import_transactions(self, directory):
         j = 0

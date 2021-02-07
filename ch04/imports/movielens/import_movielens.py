@@ -13,9 +13,6 @@ class MoviesImporter(GraphDBBase):
         super().__init__(command=__file__, argv=argv)
         self._ia = IMDb()
 
-    def close(self):
-        self._driver.close()
-
     def import_movies(self, file):
         print("import movies")
         with open(file, 'r+') as in_file:

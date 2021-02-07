@@ -14,9 +14,6 @@ class DistanceBasedAnalysis(GraphDBBase):
     def __init__(self, argv):
         super().__init__(command=__file__, argv=argv)
 
-    def close(self):
-        self.close()
-
     def feature_selection(self, num_generations, sol_per_pop, num_parents_mating, newly_generated_elements, threshold):
         start = time.time()
         data, data_labels, data_fraud, data_labels_fraud, data_no_fraud, data_no_labels_fraud = self.get_data()

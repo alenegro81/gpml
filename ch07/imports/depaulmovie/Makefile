@@ -6,4 +6,6 @@ test:
 
 download:
 	mkdir -p ../../../dataset/deeppaulmovie && \
-	curl -L -o ../../../dataset/deeppaulmovie/ratings.txt https://raw.githubusercontent.com/JDonini/depaulmovie-recommender-system/master/dataset/Movie_DePaulMovie/ratings.txt
+	if [ ! -f ../../../dataset/deeppaulmovie/ratings.txt ]; then \
+		curl -L -o ../../../dataset/deeppaulmovie/ratings.txt https://raw.githubusercontent.com/JDonini/depaulmovie-recommender-system/master/dataset/Movie_DePaulMovie/ratings.txt ; \
+	fi

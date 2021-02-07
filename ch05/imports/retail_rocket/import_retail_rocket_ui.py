@@ -57,7 +57,7 @@ if __name__ == '__main__':
     importing = RetailRocketImporter(argv=sys.argv[1:])
     base_path = importing.source_dataset_path
     if not base_path:
-        base_path = "/Users/ale/neo4j-servers/gpml/dataset/retailrocket-recommender-system-dataset/"
+        base_path = "../../../dataset/retailrocket/"
     file_path = os.path.join(base_path, "events.csv")
     importing.import_user_item(file=file_path)
     end = time.time() - start

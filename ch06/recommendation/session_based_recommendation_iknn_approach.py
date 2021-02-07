@@ -9,9 +9,6 @@ class SessionBasedRecommender(GraphDBBase):
     def __init__(self, argv):
         super().__init__(command=__file__, argv=argv)
 
-    def close(self):
-        self.close()
-
     def compute_and_store_similarity(self):
         items_VSM = self.get_item_vectors()
         for item in items_VSM:
