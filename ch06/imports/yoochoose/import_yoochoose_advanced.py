@@ -14,9 +14,6 @@ class YoochooseImporter(GraphDBBase):
     def __init__(self, argv):
         super().__init__(command=__file__, argv=argv)
 
-    def close(self):
-        self._driver.close()
-
     def import_session_data(self, file):
         dtype = {"sessionID": np.int64, "itemID": np.int64, "category": object}
         j = 0
@@ -172,7 +169,6 @@ class YoochooseImporter(GraphDBBase):
             tx.commit()
             print(j, "sessions created processed")
         return sess_clicks
-
 
 
 if __name__ == '__main__':

@@ -125,6 +125,9 @@ class UserRecommender(BaseRecommender):
         return (+1.0/size)*count(r) as score
     """
 
+    def __init__(self, argv):
+        super().__init__(argv=argv)
+
 
 class ItemRecommender(BaseRecommender):
     label = "User"
@@ -140,6 +143,9 @@ class ItemRecommender(BaseRecommender):
         return sum(r.value) as score
     """
 
+    def __init__(self, argv):
+        super().__init__(argv=argv)
+
 
 class Recommender(GraphDBBase):
     class KNNType(Enum):
@@ -149,8 +155,8 @@ class Recommender(GraphDBBase):
     def __init__(self, argv):
         super().__init__(command=__file__, argv=argv)
         self.strategies: Dict[Recommender.KNNType, BaseRecommender] = {
-            Recommender.KNNType.USER: UserRecommender(),
-            Recommender.KNNType.ITEM: ItemRecommender()
+            Recommender.KNNType.USER: UserRecommender(argv),
+            Recommender.KNNType.ITEM: ItemRecommender(argv)
         }
 
     def compute_and_store_KNN(self, type_: KNNType) -> None:

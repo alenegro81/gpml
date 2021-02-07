@@ -14,9 +14,6 @@ class GraphBasedNLP(GraphDBBase):
         self.__text_processor = TextProcessor(self.nlp, self._driver)
         self.create_constraints()
 
-    def close(self):
-        self.close()
-
     def create_constraints(self):
         self.execute_without_exception("CREATE CONSTRAINT ON (u:Tag) ASSERT (u.id) IS NODE KEY")
         self.execute_without_exception("CREATE CONSTRAINT ON (i:TagOccurrence) ASSERT (i.id) IS NODE KEY")

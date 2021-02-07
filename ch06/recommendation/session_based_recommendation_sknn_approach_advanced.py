@@ -17,9 +17,6 @@ class SessionBasedRecommender(GraphDBBase):
         self.__time_to_sort = []
         self.__time_to_store = []
 
-    def close(self):
-        self.close()
-
     def compute_and_store_similarity(self):
         start = time.time()
         sessions_VSM, sessions_id = self._driver.session_vectors()

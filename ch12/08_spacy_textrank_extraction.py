@@ -20,9 +20,6 @@ class GraphBasedNLP(GraphDBBase):
         self.__text_processor = TextProcessor(self.nlp, self._driver)
         self.create_constraints()
 
-    def close(self):
-        self.close()
-
     def create_constraints(self):
         self.execute_without_exception("CREATE CONSTRAINT ON (u:Tag) ASSERT (u.id) IS NODE KEY")
         self.execute_without_exception("CREATE CONSTRAINT ON (i:TagOccurrence) ASSERT (i.id) IS NODE KEY")
@@ -64,6 +61,6 @@ if __name__ == '__main__':
     basic_nlp = GraphBasedNLP(sys.argv[1:])
     base_path = basic_nlp.source_dataset_path
     if not base_path:
-        base_path = "../../../dataset/movieplot"
-    basic_nlp.import_data(file=os.path.abspath(os.path.join(base_path, "wiki_movie_plots_deduped.csv")))
+        base_path = "../dataset/movieplot"
+    basic_nlp.import_data(file=os.path.join(base_path, "wiki_movie_plots_deduped.csv"))
     basic_nlp.close()

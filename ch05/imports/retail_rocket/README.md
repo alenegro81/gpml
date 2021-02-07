@@ -18,11 +18,11 @@ pip install -r requirements.txt
 ## Download & import the dataset
 
 
-For this chapter we're using the [Retailrocket recommender system dataset](https://www.kaggle.com/retailrocket/ecommerce-dataset) available from Kaggle.  From this dataset we need only the `events.csv` file (you can download the whole dataset), download it and put it into some directory.
+For this chapter we're using the [Retailrocket recommender system dataset](https://www.kaggle.com/retailrocket/ecommerce-dataset) available from Kaggle.  From this dataset we need only the `events.csv` file (you can download the whole dataset), download it and put it into directory `../../../dataset/retailrocket/`.
 
 Importing of data is performed with following command:
 
 ```sh
-python import_retail_rocket_ui.py -s path_to_directory_with_events.csv
+python import_retail_rocket_ui.py
 
 ```

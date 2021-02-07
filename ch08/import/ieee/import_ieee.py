@@ -22,9 +22,6 @@ class IEEEImporter(GraphDBBase):
             self.execute_without_exception("CREATE INDEX ON :Transaction(isFraud)")
             self.execute_without_exception("CREATE INDEX ON :Transaction(isTrain)")
             
-    def close(self):
-        self.close()
-
     def import_transaction(self, base_path):
         j = 0
 

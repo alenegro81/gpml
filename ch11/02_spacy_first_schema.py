@@ -12,9 +12,6 @@ class GraphBasedNLP(GraphDBBase):
         self.nlp = spacy.load("en_core_web_sm")
         self.create_constraints()
 
-    def close(self):
-        self.close()
-
     def create_constraints(self):
         with self._driver.session() as session:
             self.execute_without_exception("CREATE CONSTRAINT ON (u:Tag) ASSERT (u.id) IS NODE KEY")

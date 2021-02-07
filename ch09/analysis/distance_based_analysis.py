@@ -11,9 +11,6 @@ class DistanceBasedAnalysis(GraphDBBase):
     def __init__(self, argv):
         super().__init__(command=__file__, argv=argv)
 
-    def close(self):
-        self.close()
-
     def compute_and_store_distances(self, k, exact, distance_function, relationship_name):
         start = time.time()
         data, data_labels = self.get_transaction_vectors()

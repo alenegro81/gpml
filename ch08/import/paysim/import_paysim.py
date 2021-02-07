@@ -11,9 +11,6 @@ class PaySimImporter(GraphDBBase):
     def __init__(self, argv):
         super().__init__(command=__file__, argv=argv)
 
-    def close(self):
-        self.close()
-
     def import_paysim(self, file):
         dtype = {
             "step": np.int64,

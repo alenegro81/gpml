@@ -18,9 +18,6 @@ class MoviesImporterParallel(GraphDBBase):
         self._writing_queue = Queue()
         self._print_lock = threading.Lock()
 
-    def close(self):
-        self._driver.close()
-
     def import_movies(self, file):
         with open(file, 'r+') as in_file:
             reader = csv.reader(in_file, delimiter=',')
