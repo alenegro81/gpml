@@ -39,15 +39,8 @@ class YoochooseImporter(object):
                         MERGE (item:Item {itemId: $itemId, category: $category})
                         CREATE (click:Click {timestamp: $timestamp})
                         CREATE (session)-[:CONTAINS]->(click)
-                        CREATE (click)-[:RELATED_TO]->(item)
+                        CREATE (click)-[:IS_RELATED_TO]->(item)
                     """
-                #        CREATE (session)-[:LAST_CLICK]->(click)
-
-                #        WITH click, session
-                #        MATCH (session)-[r:LAST_CLICK]->(lastClick:Click)
-                #        WHERE id(click) <> id(lastClick)
-                #        CREATE (lastClick)-[:NEXT]->(click)
-                #        DELETE r
 
                 for row in df.itertuples():
                     try:
@@ -90,14 +83,8 @@ class YoochooseImporter(object):
                         MATCH (item:Item {itemId: $itemId})
                         CREATE (buy:Buy:Click {timestamp: $timestamp})
                         CREATE (session)-[:CONTAINS]->(buy)
-                        CREATE (buy)-[:RELATED_TO]->(item)
+                        CREATE (buy)-[:IS_RELATED_TO]->(item)
                 """
-                #        CREATE (session)-[:LAST_CLICK]->(buy)
-                #        WITH buy, session
-                #        MATCH (session)-[r:LAST_CLICK]->(lastClick:Click)
-                #        WHERE id(buy) <> id(lastClick)
-                #        CREATE (lastClick)-[:NEXT]->(buy)
-                #        DELETE r
 
                 for row in df.itertuples():
                     try:
@@ -117,9 +104,6 @@ class YoochooseImporter(object):
                 tx.commit()
                 print(j, "lines processed")
             print(j, "lines processed")
-            # tx = session.begin_transaction()
-            # query to set the last transaction
-            # tx.commit
 
 
 def strip(string): return ''.join([c if 0 < ord(c) < 128 else ' ' for c in string])

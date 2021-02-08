@@ -1,7 +1,7 @@
 //simple model, run it one by one
-CREATE CONSTRAINT ON (s:Email) ASSERT (s.value) IS NODE KEY;
-CREATE CONSTRAINT ON (s:PhoneNumber) ASSERT (s.value) IS NODE KEY;
-CREATE CONSTRAINT ON (s:Address) ASSERT (s.value) IS NODE KEY;
+CREATE CONSTRAINT ON (s:Email) ASSERT (s.value) IS UNIQUE;
+CREATE CONSTRAINT ON (s:PhoneNumber) ASSERT (s.value) IS UNIQUE;
+CREATE CONSTRAINT ON (s:Address) ASSERT (s.value) IS UNIQUE;
 
 //run it all at once
 CREATE (alenegro:User {accountId: "49295987202", username: "alenegro", email: "mpd7xg@tim.it", name:"Hilda J Womack", phone_number: "580-548-1149", address: "4093 Cody Ridge Road - Enid, OK"})

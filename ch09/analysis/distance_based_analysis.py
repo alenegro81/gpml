@@ -13,30 +13,28 @@ class DistanceBasedAnalysis(object):
     def close(self):
         self._driver.close()
 
-    def compute_and_store_distances(self, k, exact):
+    def compute_and_store_distances(self, k, exact, distance_function, relationship_name):
         start = time.time()
         data, data_labels = self.get_transaction_vectors()
         print("Time to get vectors:", time.time() - start)
         start = time.time()
-        #selected_feature = np.loadtxt("array.txt")
-        #new_data = [np.multiply(vector, selected_feature).tolist() for vector in data]
+
         if exact:
-            ann_labels, ann_distances = self.compute_knn(data, data_labels, k)
-            label = "DISTANT_FROM_EXACT"
+            ann_labels, ann_distances = self.compute_knn(data, data_labels, k, distance_function)
         else:
-            ann_labels, ann_distances = self.compute_ann(data, data_labels, k)
-            label = "DISTANT_FROM"
+            ann_labels, ann_distances = self.compute_ann(data, data_labels, k, distance_function)
+
         print("Time to compute nearest neighbors:", time.time() - start)
         start = time.time()
-        self.store_ann(data_labels, ann_labels, ann_distances, label)
+        self.store_ann(data_labels, ann_labels, ann_distances, relationship_name)
         print("Time to store nearest neighbors:", time.time() - start)
         print("done")
 
-    def compute_ann(self, data, data_labels, k):
+    def compute_ann(self, data, data_labels, k, distance_function):
         dim = len(data[0])
         num_elements = len(data_labels)
         # Declaring index
-        p = hnswlib.Index(space='l2', dim=dim)  # possible options are l2, cosine or ip
+        p = hnswlib.Index(space=distance_function, dim=dim)  # possible options for ditance_formula are l2, cosine or ip
         # Initing index - the maximum number of elements should be known beforehand
         p.init_index(max_elements=num_elements, ef_construction=800, M=200)
         # Element insertion (can be called several times):
@@ -47,9 +45,9 @@ class DistanceBasedAnalysis(object):
         labels, distances = p.knn_query(data, k = k)
         return labels, distances
 
-    def compute_knn(self, data, data_labels, k):
+    def compute_knn(self, data, data_labels, k, distance_function):
         pre_processed_data = [np.array(item) for item in data]
-        nbrs = NearestNeighbors(n_neighbors=k, algorithm='brute', metric='mahalanobis', n_jobs=-1).fit(pre_processed_data)
+        nbrs = NearestNeighbors(n_neighbors=k, algorithm='brute', metric=distance_function, n_jobs=-1).fit(pre_processed_data)
         knn_distances, knn_labels = nbrs.kneighbors(pre_processed_data)
         distances = knn_distances
         labels = [[data_labels[element] for element in item] for item in knn_labels]
@@ -114,8 +112,11 @@ class DistanceBasedAnalysis(object):
 
 if __name__ == '__main__':
     uri = "bolt://localhost:7687"
+    distance_formula_value = "l2" #'mahalanobis' for exact
+    #relationship_name_value = "DISTANT_FROM_EXACT"
+    relationship_name_value = "DISTANT_FROM"
     analyzer = DistanceBasedAnalysis(uri=uri, user="neo4j", password="q1")
-    analyzer.compute_and_store_distances(25, False);
+    analyzer.compute_and_store_distances(25, False, distance_formula_value, relationship_name_value);
     # Uncomment this line to calculate exact NNs, but it will take a lot of time!
     # analyzer.compute_and_store_distances(25, True);
     analyzer.close()

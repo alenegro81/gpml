@@ -39,7 +39,7 @@ class SessionBasedRecommender(object):
                 """
 
         query = """
-                    MATCH (item:Item)<-[:RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
+                    MATCH (item:Item)<-[:IS_RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
                     WHERE session.sessionId = $sessionId
                     WITH item 
                     ORDER BY id(item)
@@ -56,7 +56,7 @@ class SessionBasedRecommender(object):
                 if i % 100 == 0:
                     print(i, "rows processed")
 
-            print(i, "lines processed")
+            print(i, "rows processed")
         print(len(sessions_VSM_sparse))
         return sessions_VSM_sparse
 
@@ -84,7 +84,7 @@ class SessionBasedRecommender(object):
     def recommend_to(self, session_id, k):
         top_items = []
         query = """
-            MATCH (target:Session)-[r:SIMILAR_TO]->(d:Session)-[:CONTAINS]->(:Click)-[:RELATED_TO]->(item:Item) 
+            MATCH (target:Session)-[r:SIMILAR_TO]->(d:Session)-[:CONTAINS]->(:Click)-[:IS_RELATED_TO]->(item:Item) 
             WHERE target.sessionId = $sessionId
             WITH DISTINCT item.itemId as itemId, r
             RETURN itemId, sum(r.weight) as score

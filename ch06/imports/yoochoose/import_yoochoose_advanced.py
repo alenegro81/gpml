@@ -74,7 +74,7 @@ class YoochooseImporter(object):
                 UNWIND $items as entry
                 MERGE (item:Item {itemId: entry.itemId, category: entry.category})
                 CREATE (click:Click {timestamp: entry.timestamp})
-                CREATE (click)-[:RELATED_TO]->(item)
+                CREATE (click)-[:IS_RELATED_TO]->(item)
                 CREATE (session)-[:CONTAINS]->(click)
             """
             for session_id in list(sess_clicks):
@@ -108,7 +108,7 @@ class YoochooseImporter(object):
                 MATCH (item:Item {itemId: $itemId})
                 CREATE (buy:Buy:Click {timestamp: $timestamp})
                 CREATE (session)-[:CONTAINS]->(buy)
-                CREATE (buy)-[:RELATED_TO]->(item)
+                CREATE (buy)-[:IS_RELATED_TO]->(item)
             """
             for chunk in pd.read_csv(file,
                                      header=0,

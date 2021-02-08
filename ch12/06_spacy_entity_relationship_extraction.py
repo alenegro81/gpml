@@ -49,7 +49,7 @@ class GraphBasedNLP(object):
             self.__text_processor.build_entities_inferred_graph(text_id)
             rules = [
                 {
-                    'type': 'RECEIVE_PRICE',
+                    'type': 'RECEIVE_PRIZE',
                     'verbs': ['receive'],
                     'subjectTypes': ['PERSON', 'NP'],
                     'objectTypes': ['WORK_OF_ART']

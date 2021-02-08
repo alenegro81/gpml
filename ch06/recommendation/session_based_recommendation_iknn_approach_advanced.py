@@ -89,7 +89,7 @@ class SessionBasedRecommender(object):
                 """
 
         query = """
-                    MATCH (item:Item)<-[:RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
+                    MATCH (item:Item)<-[:IS_RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
                     WHERE item.itemId = $itemId
                     WITH session 
                     order by click.timestamp desc

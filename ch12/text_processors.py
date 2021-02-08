@@ -216,9 +216,9 @@ class TextProcessor(object):
             MATCH (verb:TagOccurrence {pos: "VBD"})
             WHERE verb.lemma IN rule.verbs
             WITH verb, rule
-            MATCH (verb)-[:IS_DEPENDENT {type:"nsubj"}]->(subject)-[:PARTICIPATE_IN]->(subjectNe:NamedEntity)
+            MATCH (verb)-[:IS_DEPENDENT {type:"nsubj"}]->(subject)-[:PARTICIPATES_IN]->(subjectNe:NamedEntity)
             WHERE subjectNe.type IN rule.subjectTypes
-            MATCH (verb)-[:IS_DEPENDENT {type:"dobj"}]->(object)-[:PARTICIPATE_IN]->(objectNe:NamedEntity {type: "WORK_OF_ART"})
+            MATCH (verb)-[:IS_DEPENDENT {type:"dobj"}]->(object)-[:PARTICIPATES_IN]->(objectNe:NamedEntity {type: "WORK_OF_ART"})
             WHERE objectNe.type IN rule.objectTypes
             WITH verb, subjectNe, objectNe, rule
             MERGE (subjectNe)-[:IS_RELATED_TO {root: verb.lemma, type: rule.type}]->(objectNe)

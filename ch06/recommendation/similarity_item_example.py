@@ -1,5 +1,6 @@
 from sklearn.metrics.pairwise import cosine_similarity
 
+#Vector representation of the items
 item3 = [0,1,0,0,1]
 item7 = [1,0,1,0,1]
 item9 = [0,1,1,1,1]
@@ -11,7 +12,7 @@ item248 = [0,1,1,1,0]
 item346 = [1,0,1,1,1]
 item562 = [1,0,0,0,0]
 
-print("....")
+# Compute and print relevant similarities
 print(cosine_similarity([item12], [item23]))
 print(cosine_similarity([item12], [item65]))
 print(cosine_similarity([item12], [item85]))

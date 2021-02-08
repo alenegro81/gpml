@@ -1,5 +1,11 @@
 import math
 
+def convert_sparse_vector(numbers):
+    vector_dict = {}
+    for k, c in enumerate(numbers):
+        if c:
+            vector_dict[k] = c
+    return vector_dict
 
 def cosine_similarity(vectA, vectB):
     a = dot(vectA, vectB);
@@ -39,3 +45,9 @@ def dot(vect_a, vect_b):
 
 def norm(vect):
     return math.sqrt(dot(vect, vect))
+
+
+if __name__ == '__main__':
+    print(convert_sparse_vector([1,0,0,1,0,0])) #{0: 1, 3: 1}
+    print(convert_sparse_vector([1, 1, 0, 0, 0, 0])) #{0: 1, 1: 1}
+    print(convert_sparse_vector([1, 1, 0, 0, 0, 1])) #{0: 1, 1: 1, 5: 1}

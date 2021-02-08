@@ -1,4 +1,4 @@
-CREATE CONSTRAINT ON (s:IPIstance) ASSERT (s.id) IS NODE KEY;
+CREATE CONSTRAINT ON (s:IPIstance) ASSERT (s.id) IS UNIQUE;
 
 
 //run it all at once

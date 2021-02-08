@@ -74,7 +74,7 @@ class ContextAwareRecommender(object):
                 i += 1
                 if i % 100 == 0:
                     print(i, "rows processed")
-            print(i, "lines processed")
+            print(i, "rows processed")
         print(len(items_VSM_sparse))
         return items_VSM_sparse
 

@@ -39,7 +39,7 @@ class SessionBasedRecommender(object):
                 """
 
         query = """
-                    MATCH (item:Item)<-[:RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
+                    MATCH (item:Item)<-[:IS_RELATED_TO]-(click:Click)<-[:CONTAINS]-(session:Session)
                     WHERE item.itemId = $itemId
                     WITH session 
                     ORDER BY id(session)
@@ -55,7 +55,7 @@ class SessionBasedRecommender(object):
                 i += 1
                 if i % 100 == 0:
                     print(i, "rows processed")
-            print(i, "lines processed")
+            print(i, "rows processed")
         print(len(items_VSM_sparse))
         return items_VSM_sparse
 
