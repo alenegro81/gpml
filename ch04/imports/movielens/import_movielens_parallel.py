@@ -19,7 +19,7 @@ class MoviesImporterParallel(GraphDBBase):
         self._print_lock = threading.Lock()
 
     def import_movies(self, file):
-        with open(file, 'r+') as in_file:
+        with open(file, 'r+', encoding='utf-8') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
@@ -56,7 +56,7 @@ class MoviesImporterParallel(GraphDBBase):
                 print(j, "lines processed")
 
     def import_user_item(self, file):
-        with open(file, 'r+') as in_file:
+        with open(file, 'r+', encoding='utf-8') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
@@ -94,7 +94,7 @@ class MoviesImporterParallel(GraphDBBase):
                 print(j, "lines processed")
 
     def import_movie_details(self, file):
-        with open(file, 'r+') as in_file:
+        with open(file, 'r+', encoding='utf-8') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
