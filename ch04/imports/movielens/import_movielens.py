@@ -15,7 +15,7 @@ class MoviesImporter(GraphDBBase):
 
     def import_movies(self, file):
         print("import movies")
-        with open(file, 'r+') as in_file:
+        with open(file, 'r+', encoding='utf-8') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
@@ -57,7 +57,7 @@ class MoviesImporter(GraphDBBase):
 
     def import_movie_details(self, file):
         print("Importing details of movies")
-        with open(file, 'r+') as in_file:
+        with open(file, 'r+', encoding='utf-8') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
@@ -127,7 +127,7 @@ class MoviesImporter(GraphDBBase):
                 "writers": writers, "producers": producers})
 
     def import_user_item(self, file):
-        with open(file, 'r+') as in_file:
+        with open(file, 'r+', encoding='utf-8') as in_file:
             reader = csv.reader(in_file, delimiter=',')
             next(reader, None)
             with self._driver.session() as session:
